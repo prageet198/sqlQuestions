@@ -1,0 +1,74 @@
+DIFFICULTY:-Medium
+COMPANY:-Meta
+
+Question:-
+You are working for a marketing agency that manages multiple Instagram influencer accounts. Your task is to analyze the engagement performance of 
+these influencers before and after they join your company.
+Write an SQL query to calculate average engagement growth rate percent for each influencer after they joined your company compare to before. 
+Round the growth rate to 2 decimal places and sort the output in decreasing order of growth rate.
+
+Engagement = (# of likes + # of comments on each post)
+ 
+
+Table: influencers
++---------------+-------------+
+| COLUMN_NAME   | DATA_TYPE   |
++---------------+-------------+
+| influencer_id | int         |
+| join_date     | date        |
+| username      | varchar(10) |
++---------------+-------------+
+Table: posts
++---------------+-----------+
+| COLUMN_NAME   | DATA_TYPE |
++---------------+-----------+
+| comments      | int       |
+| influencer_id | int       |
+| likes         | int       |
+| post_date     | date      |
+| post_id       | int       |
++---------------+-----------+
+
+My Solution:-
+WITH initialData AS(
+select influencers.username,
+posts.post_date, posts.likes, posts.comments,
+influencers.join_date,
+(posts.likes+posts.comments) AS engagement,
+CASE WHEN posts.post_date>=influencers.join_date THEN 1 ELSE 0 END AS flag
+from posts INNER JOIN influencers ON posts.influencer_id=influencers.influencer_id
+ ),
+ beforeEngData AS(
+ SELECT username,
+ SUM(engagement)/COUNT(*) AS finalEngBefore
+ FROM initialData
+ WHERE flag='0'
+ GROUP BY username
+   ),
+   afterEngData AS(
+     SELECT username,
+ SUM(engagement)/COUNT(*) AS finalEngAfter
+ FROM initialData
+ WHERE flag='1'
+ GROUP BY username
+     )
+     
+     SELECT beforeEngData.username,
+     finalEngBefore,
+     finalEngAfter,
+     ROUND(((finalEngAfter-finalEngBefore)/finalEngBefore)*100,2) AS growth
+     FROM beforeEngData INNER JOIN afterEngData ON beforeEngData.username=afterEngData.username
+
+Actual Solution:-
+with cte as (
+select  i.username 
+, avg(case when p.post_date < i.join_date then (likes+comments) end) as before_engagement
+, avg(case when p.post_date > i.join_date then (likes+comments) end) as after_engagement
+from posts p
+inner join influencers i on i.influencer_id=p.influencer_id
+group by i.username 
+)
+select *
+,round((after_engagement-before_engagement)*100/before_engagement,2)  as growth
+from cte
+order by growth desc;
