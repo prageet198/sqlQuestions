@@ -1,0 +1,55 @@
+DIFFICULTY:-Medium
+COMPANY:-TCS
+
+Question:-
+TCS wants to award employees based on number of projects completed by each individual each month.  Write an SQL to find best employee for each month along 
+with number of projects completed by him/her in that month, display the output in descending order of number of completed projects.
+
+Table: projects
++-------------------------+-------------+
+| COLUMN_NAME             | DATA_TYPE   |
++-------------------------+-------------+
+| project_id              | int         |
+| employee_name           | varchar(10) |
+| project_completion_date | date        |
++-------------------------+-------------+
+
+My Solution:-
+WITH empDate AS (
+  
+select employee_name,
+YEAR(project_completion_date) AS projectYear,
+FORMAT(project_completion_date,'MM') AS projectMonth
+from projects
+),
+calculationData AS(
+SELECT employee_name, COUNT(*) AS totalProjects,
+projectYear,projectMonth
+FROM empDate
+GROUP BY employee_name,projectYear,projectMonth),
+rankingCalculation AS (
+SELECT employee_name,
+totalProjects,
+projectYear,
+projectMonth,
+DENSE_RANK() OVER( PARTITION BY projectYear,projectMonth ORDER BY totalProjects DESC) AS ranked
+FROM calculationData)
+
+SELECT employee_name,
+totalProjects,
+CONCAT(projectYear,projectMonth) AS yearMonth
+FROM rankingCalculation
+WHERE ranked=1
+ORDER BY totalProjects DESC
+
+Actual Solution:-
+with cte_projects_completed as (
+select employee_name, DATE_FORMAT(project_completion_date,'%Y%m') as year_month_combo,count(project_completion_date) as no_of_completed_projects
+from projects
+where project_completion_date is not null
+group by employee_name,DATE_FORMAT(project_completion_date,'%Y%m') )
+select employee_name,no_of_completed_projects,year_month_combo as yearmonth from (
+select employee_name,year_month_combo,no_of_completed_projects, rank() over(partition by year_month_combo order by no_of_completed_projects desc) as rn
+from cte_projects_completed) a
+where rn=1
+ORDER BY no_of_completed_projects DESC;
