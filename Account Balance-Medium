@@ -1,0 +1,69 @@
+DIFFICULTY:-Medium
+COMPANY:-Paypal
+
+Question:-
+You are given a list of users and their opening account balance along with the transactions done by them. Write a SQL to calculate their account balance at 
+the end of all the transactions. Please note that users can do transactions among themselves as well, display the output in ascending order of the final balance.
+
+Table: users
++-----------------+-------------+
+| COLUMN_NAME     | DATA_TYPE   |
++-----------------+-------------+
+| user_id         | int         |
+| username        | varchar(10) |
+| opening_balance | int         |
++-----------------+-------------+
+
+Table: transactions
++-------------+-----------+
+| COLUMN_NAME | DATA_TYPE |
++-------------+-----------+
+| id          | int       |
+| from_userid | int       |
+| to_userid   | int       |
+| amount      | int       |
++-------------+-----------+
+
+My Solution:-
+WITH balance AS (
+  SELECT user_id, username, opening_balance
+  FROM users
+  ),
+  debitTransactions AS (
+    SELECT from_userid, SUM(amount) AS totalDebit
+    FROM transactions
+    GROUP BY from_userid
+    ),
+   creditTransactions AS (
+     SELECT to_userid, SUM(amount) AS totalCredit
+     FROM transactions
+     GROUP BY to_userid
+     ),
+     calculation AS (
+       SELECT balance.user_id, balance.username, balance.opening_balance,ISNULL(debitTransactions.totalDebit,'0') AS totalDebit, ISNULL(creditTransactions.totalCredit,'0') AS totalCredit
+    FROM balance LEFT JOIN debitTransactions
+    ON balance.user_id=debitTransactions.from_userid
+    LEFT JOIN creditTransactions
+    ON balance.user_id=creditTransactions.to_userid
+       )
+       
+    SELECT username,
+    (opening_balance-totalDebit+totalCredit) AS finalBalance
+    FROM calculation
+    ORDER BY finalBalance
+
+Actual Solution:-
+with all_trans as (
+select from_userid as user_id    , -1*amount as amount from transactions 
+union all
+select to_userid, amount as amount from transactions 
+)
+,trans_amount as 
+(select user_id,sum(amount) as transact_amount
+from all_trans
+group by user_id
+)
+select u.username , opening_balance + coalesce(transact_amount,0) as final_balance
+from users u 
+left join trans_amount t on u.user_id=t.user_id
+ORDER BY final_balance ASC;
