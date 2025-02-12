@@ -1,0 +1,65 @@
+DIFFICULTY-Medium
+Company:- Boat Lifestyle
+
+Question:-
+boAt Lifestyle is focusing on influencer marketing to build and scale their brand. They want to partner with power creators for their upcoming campaigns. 
+The creators should satisfy below conditions to qualify:
+
+1- They should have 100k+ followers on at least 2 social media platforms and
+2- They should have at least 50k+ views on their latest YouTube video.
+Write an SQL to get creator id and name satisfying above conditions.
+Table: creators
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| id          | int         |
+| name        | varchar(10) |
+| followers   | int         |
+| platform    | varchar(10) |
++-------------+-------------+
+Table: youtube_videos
++--------------+-----------+
+| COLUMN_NAME  | DATA_TYPE |
++--------------+-----------+
+| id           | int       |
+| creator_id   | int       |
+| publish_date | date      |
+| views        | int       |
++--------------+-----------+
+
+My Solution:-
+WITH creatorData AS(
+select id, name,
+SUM(CASE WHEN followers>'100000' THEN 1 ELSE 0 END) AS status
+from creators
+GROUP BY id, name
+HAVING SUM(CASE WHEN followers>'100000' THEN 1 ELSE 0 END)>=2
+  ),
+  youTubeData AS (
+  SELECT creator_id,
+  publish_date,
+  views,
+  DENSE_RANK() OVER(PARTITION BY creator_id ORDER BY publish_date DESC) AS ranked
+  FROM youtube_videos)
+  
+  SELECT id,name
+  FROM creatorData INNER JOIN youTubeData
+  ON creatorData.id=youTubeData.creator_id
+  WHERE ranked='1' AND views>50000
+
+Actual Solution:-
+with condition_1 as (
+select id,name
+ from creators
+ where followers > 100000
+ group by id,name
+ having count(*)>=2
+)
+,condition_2 as 
+(
+select *, row_number() over(partition by creator_id order by publish_date desc) as rn    
+from youtube_videos
+)
+select c1.id,c1.name from condition_2 c2
+inner join condition_1 c1 on c1.id=c2.creator_id
+where rn=1 and views>50000;
