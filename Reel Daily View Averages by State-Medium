@@ -1,0 +1,50 @@
+DIFFICULTY:-Medium
+COMPANY:-Meta
+
+Question:-
+Meta (formerly Facebook) is analyzing the performance of Instagram Reels across different states in the USA. You have access to a table named REEL 
+that tracks the cumulative views of each reel over time. Write an SQL to get average daily views for each Instagram Reel in each state. 
+Round the average to 2 decimal places and sort the result by average is descending order. 
+
+Table: reel 
++-----------------+----------+
+| COLUMN_NAME     | DATA_TYPE|
++-----------------+----------+
+| reel_id         | int      |    
+| record_date     | date     |
+| state           | varchar  |
+| cumulative_views| int      |
++-------------+--------------+
+
+My Solution:-
+WITH initialData AS(
+select reel_id, state,
+cumulative_views,
+LAG(cumulative_views,1,0) OVER(PARTITION BY state ORDER BY record_date) AS previousView
+from reel 
+  ),
+  calculation AS (
+ SELECT reel_id, state, (cumulative_views-previousView) AS dailyViews
+ FROM initialData
+    )
+    SELECT reel_id, state, ROUND(AVG(dailyViews),2) AS avgDailyViews
+    FROM calculation
+    GROUP BY reel_id, state
+    ORDER BY avgDailyViews DESC
+
+Actual Solution:-
+WITH MaxViews AS (
+    SELECT
+        Reel_id,
+        State,
+        MAX(Cumulative_Views) AS Max_Cumulative_Views,
+        COUNT(*) AS Days
+    FROM REEL
+    GROUP BY Reel_id, State
+)
+SELECT
+    Reel_id,
+    State,
+    ROUND(Max_Cumulative_Views / Days, 2) AS Avg_Daily_Views
+FROM MaxViews
+order by Avg_Daily_Views desc;
