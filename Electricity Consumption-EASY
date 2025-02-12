@@ -1,0 +1,42 @@
+MEDIUM:-EASY
+Company:-Infosys
+Question:-
+You have access to data from an electricity billing system, detailing the electricity usage and cost for specific households over billing periods in the years 2023 and 2024. 
+Your objective is to present the total electricity consumption, total cost and average monthly consumption for each household per year 
+display the output in ascending order of each household id & year of the bill.
+
+Tables: electricity_bill
++-----------------+---------------+
+| COLUMN_NAME     | DATA_TYPE     |
++-----------------+---------------+
+| bill_id         | int           |
+| household_id    | int           |
+| billing_period  | varchar(7)    |
+| consumption_kwh | decimal(10,2) |
+| total_cost      | decimal(10,2) |
++-----------------+---------------+
+
+My Solution:-
+WITH yearData AS (
+  SELECT household_id,
+LEFT(billing_period, 4) AS billYear,
+consumption_kwh,
+total_cost
+from electricity_bill
+)
+
+SELECT household_id,
+billYear,
+SUM(consumption_kwh) AS consumption_kwh,
+SUM(total_cost),
+AVG(consumption_kwh) AS avg_consumption_kwh
+FROM yearData
+GROUP BY household_id, billYear
+ORDER BY household_id, billYear
+
+Actual Solution:-
+select household_id,left(billing_period,4) as bill_year, sum(consumption_kwh) as consumption_kwh, sum(total_cost) as total_cost
+, avg(consumption_kwh) as avg_consumption_kwh
+from electricity_bill
+group by household_id,left(billing_period,4)
+ORDER BY household_id,bill_year;
