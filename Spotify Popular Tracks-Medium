@@ -1,0 +1,56 @@
+DIFFICULTY:-Medium
+COMPANY:-Spotify
+
+Question:-
+Suppose you are a data analyst working for Spotify (a music streaming service company) . Your company is interested in analyzing user engagement with playlists 
+and wants to identify the most popular tracks among all the playlists.
+Write an SQL query to find the top 2 most popular tracks based on number of playlists they are part of. 
+Your query should return the top 2 track ID along with total number of playlist they are part of , sorted by the same and  track id in descending order , 
+Please consider only those playlists which were played by at least 2 distinct users.
+
+Table: playlists
++---------------+--------------+
+| COLUMN_NAME   | DATA_TYPE    |
++---------------+--------------+
+| playlist_id   | int          |
+| playlist_name | varchar(15) |
++---------------+--------------+
+Table: playlist_tracks
++-------------+-----------+
+| COLUMN_NAME | DATA_TYPE |
++-------------+-----------+
+| playlist_id | int       |
+| track_id    | int       |
++-------------+-----------+
+Table: playlist_plays
++-------------+------------+
+| COLUMN_NAME | DATA_TYPE  |
++-------------+------------+
+| playlist_id | int        |
+| user_id     | varchar(2) |
++-------------+------------+
+
+My Solution:-
+WITH uniqueUsers AS(
+SELECT playlist_id, COUNT(DISTINCT user_id) AS uniqueUsers
+FROM playlist_plays
+GROUP BY playlist_id
+HAVING COUNT(DISTINCT user_id)>=2
+  )
+SELECT TOP 2 track_id, COUNT(playlist_tracks.playlist_id) AS noOfPlaylist
+FROM playlist_tracks INNER JOIN uniqueUsers
+ON playlist_tracks.playlist_id=uniqueUsers.playlist_id
+GROUP BY track_id
+ORDER BY noOfPlaylist DESC
+
+Actual Solution:-
+SELECT pt.track_id, count(distinct p.playlist_id) as no_of_playlist
+FROM playlists p
+INNER JOIN playlist_tracks pt ON p.playlist_id = pt.playlist_id 
+INNER JOIN (select playlist_id from playlist_plays
+group by playlist_id
+having count(distinct user_id)>1
+) t on t.playlist_id = pt.playlist_id 
+GROUP BY pt.track_id 
+ORDER BY no_of_playlist desc,pt.track_id DESC
+limit 2;
