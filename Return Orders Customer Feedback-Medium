@@ -1,0 +1,68 @@
+DIFFICULTY:-MEDIUM
+COMPANY:-Amazon
+
+Question:-
+Namastekart, an e-commerce company, has observed a notable surge in return orders recently. They suspect that a specific group of customers may be responsible 
+for a significant portion of these returns. To address this issue, their initial goal is to identify customers who have returned more than 50% of their orders. 
+This way, they can proactively reach out to these customers to gather feedback.
+Write an SQL to find list of customers along with their return percent (Round to 2 decimal places), display the output in ascending order of customer name.
+
+Table: orders (primary key : order_id)
++---------------+-------------+
+| COLUMN_NAME   | DATA_TYPE   |
++---------------+-------------+
+| customer_name | varchar(10) |
+| order_date    | date        |
+| order_id      | int         |
+| sales         | int         |
++---------------+-------------+
+
+Table: returns (primary key : order_id)
++-------------+-----------+
+| COLUMN_NAME | DATA_TYPE |
++-------------+-----------+
+| order_id    | int       |
+| return_date | date      |
++-------------+-----------+
+
+My Solution:-
+WITH orderData AS (
+  SELECT customer_name,
+  COUNT(*) AS totalOrders
+  FROM orders
+  GROUP BY customer_name),
+  
+returnData AS(
+select orders.order_id,
+orders.customer_name,
+CASE WHEN returns.return_date IS NOT NULL THEN '1'
+ELSE '0' END AS returnStatus
+from orders LEFT JOIN returns
+ON orders.order_id=returns.order_id ),
+
+returnTotal AS (
+  SELECT customer_name,
+  COUNT(*) AS totalReturn
+  FROM returnData 
+  WHERE returnStatus='1'
+  GROUP BY customer_name),
+
+overAllData AS(
+SELECT returnTotal.customer_name,
+orderData.totalOrders,
+returnTotal.totalReturn,
+ROUND((returnTotal.totalReturn/orderData.totalOrders)*100,2) AS returnPerct
+FROM returnTotal INNER JOIN orderData
+ON returnTotal.customer_name=orderData.customer_name
+HAVING ROUND((returnTotal.totalReturn/orderData.totalOrders)*100,2)>=50)
+
+SELECT customer_name, returnPerct FROM overAllData
+ORDER BY customer_name
+
+Actual Solution:-
+select customer_name,  round(count(r.order_id)*100.0/count(*),2)  as return_percent
+from orders o
+left join returns r on o.order_id=r.order_id
+group by customer_name
+having  count(r.order_id) > count(*)*0.5
+order by customer_name;
