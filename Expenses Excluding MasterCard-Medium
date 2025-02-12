@@ -1,0 +1,52 @@
+DIFFICULTY:-Medium
+COMPANY:-Paypal
+
+Question:-
+You're working for a financial analytics company that specializes in analyzing credit card expenditures. You have a dataset containing information about users' credit 
+card expenditures across different card companies.
+Write an SQL query to find the total expenditure from other cards (excluding Mastercard) for users who hold Mastercard.  
+Display only the users(along with Mastercard expense and other expense) for which expense from other cards together is more than Mastercard expense.
+
+Table: expenditures
++--------------+-------------+
+| COLUMN_NAME  | DATA_TYPE   |
++--------------+-------------+
+| user_name    | varchar(10) |
+| expenditure  | int         |
+| card_company | varchar(15) |
++--------------+-------------+
+
+My Solution:-
+WITH masterCard AS(
+SELECT user_name, SUM(expenditure) AS masterCardExpense
+from expenditures
+WHERE card_company='Mastercard'
+GROUP BY user_name
+),
+otherExpenses AS(
+SELECT user_name, SUM(expenditure) AS otherExpense
+from expenditures
+WHERE card_company!='Mastercard'
+GROUP BY user_name
+)
+SELECT masterCard.user_name, masterCardExpense,otherExpense
+FROM masterCard INNER JOIN otherExpenses ON masterCard.user_name=otherExpenses.user_name
+WHERE otherExpense>masterCardExpense
+
+Actual Solution:-
+with mastercard as (
+select user_name,sum(expenditure) as expenditure
+from expenditures 
+where card_company='Mastercard'
+group by user_name
+)
+, non_mastercard as (
+select user_name,sum(expenditure) as expenditure
+from expenditures 
+where card_company!='Mastercard'
+group by user_name
+)
+select m.user_name, m.expenditure as mastercard_expense,nm.expenditure as other_expense
+from mastercard m 
+inner join non_mastercard nm on m.user_name=nm.user_name
+where nm.expenditure > m.expenditure;
