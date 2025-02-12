@@ -1,0 +1,73 @@
+DIFFICULTY:-Medium
+COMPANY:-Airbnb
+
+Question:-
+You are planning to list a property on Airbnb. To maximize profits, you need to analyze the Airbnb data for the month of January 2023 to determine the best 
+room type for each location. The best room type is based on the maximum average occupancy during the given month.
+
+Write an SQL query to find the best room type for each location based on the average occupancy days. Order the results in descending order of 
+average occupancy days, rounded to 2 decimal places.
+Table: listings
++----------------+---------------+
+| COLUMN_NAME    | DATA_TYPE     |
++----------------+---------------+
+| listing_id     | int           |
+| host_id        | int           |
+| location       | varchar(20)   |
+| room_type      | varchar(20)   |
+| price          | decimal(10,2) |
+| minimum_nights | int           |
++----------------+---------------+
+Table: bookings
++---------------+-----------+
+| COLUMN_NAME   | DATA_TYPE |
++---------------+-----------+
+| booking_id    | int       |
+| checkin_date  | date      |
+| checkout_date | date      |
+| listing_id    | int       |
++---------------+-----------+
+
+My Solution:-
+WITH totalBooking AS (
+select listing_id, SUM(DATEDIFF(DAY,checkin_date,checkout_date)) AS totalBookDays
+from bookings
+GROUP BY listing_id
+),
+avgBooking AS (
+SELECT listings.location, listings.room_type,
+AVG(totalBooking.totalBookDays *1.0) AS avgBooking
+FROM totalBooking INNER JOIN listings
+ON totalBooking.listing_id=listings.listing_id
+GROUP BY listings.location,listings.room_type
+  ),
+ ranking AS (
+  SELECT *,
+  ROW_NUMBER() OVER (PARTITION BY location ORDER BY avgBooking DESC) AS ranked
+  FROM avgBooking
+   )
+   
+   SELECT location, room_type,ROUND(avgBooking,2) AS abgBookDays
+   FROM ranking
+   WHERE ranked=1
+   ORDER BY avgBooking DESC
+
+Actual Solution:-
+with cte as (
+select listing_id, sum(checkout_date - checkin_date) as book_days
+ from bookings 
+  group by listing_id
+)
+, cte1 as (
+select l.location,l.room_type , avg(cte.book_days * 1.0) as avg_book_days 
+from cte
+inner join listings l on cte.listing_id=l.listing_id
+group by l.location,l.room_type 
+)
+select location,room_type,round(avg_book_days,2) as avg_book_days from (
+select *,
+ row_number() over(partition by location order by avg_book_days desc) as rn 
+from cte1 
+) s
+where rn=1
+order by avg_book_days desc;
