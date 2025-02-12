@@ -1,0 +1,44 @@
+DIFFICULTY:-Medium
+COMPANY:-Amazon
+
+Question:-
+Amazon is expanding their pharmacy business to new cities every year. You are given a table of business operations where you have information about cities 
+where Amazon is doing operations along with the business date information.
+Write a SQL to find year wise number of new cities added to the business, display the output in increasing order of year.
+
+Table: business_operations
++---------------+-----------+
+| COLUMN_NAME   | DATA_TYPE |
++---------------+-----------+
+| business_date | date      |
+| city_id       | int       |
++---------------+-----------+
+
+My Solution:-
+WITH baseTable AS(
+select YEAR(business_date) AS businessYear,
+city_id
+from business_operations 
+),
+rankedCities AS (
+  SELECT businessYear,
+  city_id,
+  ROW_NUMBER() OVER(PARTITION BY city_id ORDER BY businessYear) AS firstOccurance
+  FROM baseTable)
+ SELECT businessYear,
+ COUNT(DISTINCT city_id) AS noOfNewCities
+ FROM rankedCities
+ WHERE firstOccurance='1'
+ GROUP BY businessYear
+ ORDER BY businessYear
+
+Acutual Solution:-
+with cte as (
+select city_id,min(YEAR(business_date)) as first_operation_year
+ from business_operations 
+ group by city_id
+)
+select first_operation_year,count(*) as no_of_new_cities
+from cte
+group by first_operation_year
+ORDER BY first_operation_year ASC;
