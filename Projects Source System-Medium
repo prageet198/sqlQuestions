@@ -1,0 +1,55 @@
+DIFFICULTY:-Medium
+COMPANY:-E&Y
+
+Question:-
+A company manages project data from three source systems with varying reliability:
+
+EagleEye: The most reliable and prioritized internal system.
+SwiftLink: A trusted partner system with moderate reliability.
+DataVault: A third-party system used as a fallback.
+Data for a project can come from multiple systems. For each project, you need to select the most reliable data by prioritizing the source systems: EagleEye > SwiftLink > DataVault
+
+Write an SQL to display id , project number and selected source system.
+
+Table: projects
++----------------+----------+
+| COLUMN_NAME    | DATA_TYPE|
++----------------+----------+
+| id             | int      |
+| project_number | int      | 
+| Source_System  | varchar  |
++-------------+-------------+
+
+My Solution:-
+WITH initialData AS(
+SELECT *,
+ROW_NUMBER() OVER (PARTITION BY project_number ORDER BY CASE WHEN Source_System='EagleEye' THEN 1 WHEN Source_System='SwiftLink' THEN 2 ELSE 3 END) AS ranked
+FROM projects
+)
+SELECT id, project_number, source_system
+FROM initialData
+WHERE ranked='1'
+
+Actual Solution:-
+WITH RankedData AS (
+    SELECT
+        ID,
+        Project_Number,
+        Source_System,
+        ROW_NUMBER() OVER (
+            PARTITION BY Project_Number
+            ORDER BY 
+                CASE 
+                    WHEN Source_System = 'EagleEye' THEN 1
+                    WHEN Source_System = 'SwiftLink' THEN 2
+                    WHEN Source_System = 'DataVault' THEN 3
+                END
+        ) AS rn
+    FROM
+        projects
+)
+-- Select the data with the highest priority
+SELECT 
+     id,project_number, source_system
+FROM RankedData
+WHERE rn = 1;
