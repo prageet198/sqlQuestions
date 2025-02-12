@@ -1,0 +1,45 @@
+DIFFICULTY:-Medium
+COMPANY:-Flipkart
+
+Question:-
+A technology company operates in several major cities across India, selling a variety of tech products. The company wants to analyze its sales data to understand 
+which products have been successfully sold in all the cities where they operate(available in cities table).
+Write an SQL query to identify the product names that have been sold at least 2 times in every city where the company operates.
+
+Table: products
++-------------+------------+
+| COLUMN_NAME | DATA_TYPE  |
++-------------+------------+
+| product_id  | int        |
+| product_name| VARCHAR(12)|
++-------------+------------+
+Table: cities
++-------------+------------+
+| COLUMN_NAME | DATA_TYPE  |
++-------------+------------+
+| city_id     | int        |
+| city_name   | VARCHAR(10)|
++-------------+------------+
+Table: sales
++-------------+------------+
+| COLUMN_NAME | DATA_TYPE  |
++-------------+------------+
+| sale_id     | int        |
+| product_id  | int        |
+| city_id     | int        |
+| sale_date   | VARCHAR(12)|
+| quantity    | int        |
++-------------+------------+
+
+My Solution:-
+WITH totalSalesData AS(
+select product_id, city_id, COUNT(*) AS totalSold
+from sales
+GROUP BY product_id, city_id
+HAVING COUNT(*)>=2
+  )
+  SELECT products.product_name
+  FROM totalSalesData INNER JOIN products ON totalSalesData.product_id=products.product_id
+  GROUP BY products.product_name
+  HAVING COUNT(city_id)=(SELECT COUNT(*) FROM cities)
+  ORDER BY products.product_name
