@@ -1,0 +1,48 @@
+DIFFICULTY:-Medium
+Company:-Google
+
+Question:-
+Write an SQL query to determine the transaction date with the lowest average order value (AOV) among all dates recorded in the transaction table. 
+Display the transaction date, its corresponding AOV, and the difference between the AOV for that date and the highest AOV for any day in the dataset. 
+Round the result to 2 decimal places.
+
+Table: transactions 
++--------------------+--------------+
+| COLUMN_NAME        | DATA_TYPE    |
++--------------------+--------------+
+| order_id           | int          |
+| transaction_amount | decimal(5,2) |
+| transaction_date   | date         |
+| user_id            | int          |
++--------------------+--------------+
+
+My Solution:-
+WITH allAvgData AS(
+select transaction_date,
+AVG(transaction_amount) AS allDateAov
+from transactions 
+GROUP BY transaction_date
+  ),
+  maxAov AS(
+  SELECT MAX(allDateAov) FROM allAvgData
+    ),
+    minAov AS(
+    SELECT * FROM allAvgData WHERE allDateAov =(SELECT MIN(allDateAov) FROM allAvgData))
+    SELECT * FROM 
+    maxAov CROSS JOIN minAov
+
+Actual Solution:-
+with cte as (
+select transaction_date, avg(transaction_amount) as aov
+ from transactions
+ group by transaction_date
+)
+, cte1 as (
+select *
+,row_number() over(order by aov) as rn
+,max(aov) over() as highest_aov
+from cte 
+)
+select transaction_date,round(aov,2) as aov,round(highest_aov-aov,2) as diff_from_highest_aov
+from cte1
+where rn=1;
