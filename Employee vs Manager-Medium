@@ -1,0 +1,29 @@
+DIFFICULTY:-Medium
+COMPANY:-Accenture
+
+Question:-
+You are given the table of employee details. Write an SQL to find details of employee with salary more than their manager salary but they joined the company 
+after the manager joined.
+Display employee name, salary and joining date along with their manager's salary and joining date, sort the output in ascending order of employee name.
+Please note that manager id in the employee table referring to emp id of the same table.
+
+Table: employee
++--------------+-------------+
+| COLUMN_NAME  | DATA_TYPE   |
++--------------+-------------+
+| emp_id       | int         |
+| emp_name     | varchar(10) |
+| joining_date | date        |
+| salary       | int         |
+| manager_id   | int         |
++--------------+-------------+
+
+My Solution:-
+select emp.emp_name AS employeeName,
+emp.salary AS employeeSalary,
+emp.joining_date AS employeeJoiningDate,
+ mgr.salary AS managerSalary,
+ mgr.joining_date AS managerJoiningDate
+from employee AS emp INNER JOIN employee AS mgr
+ON emp.manager_id=mgr.emp_id
+WHERE emp.salary>mgr.salary AND (emp.joining_date>mgr.joining_date)
