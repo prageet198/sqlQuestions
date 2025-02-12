@@ -1,0 +1,33 @@
+DIFFICULTY:-Medium
+COMPANY:-Amazon
+
+Question:-
+Write an SQL to retrieve the top 5 customers who have spent the most on their single purchase. Sort the result by max single purchase in descending order.
+
+Table: purchase
++-------------+------------+
+|COLUMN_NAME  | DATA_TYPE  |
++-------------+------------+
+|customer_id  | int        |
+|purchase_date| date       |
+|amount       | int        |
++-------------+------------+
+
+My Solution:-
+WITH initialData AS(
+select customer_id,
+amount,
+RANK() OVER(PARTITION BY customer_id ORDER By amount DESC) AS ranked
+from purchase
+  )
+  SELECT customer_id, amount FROM initialData
+  WHERE ranked=1
+  ORDER BY amount DESC
+  LIMIT 5
+
+Actual Solution:-
+SELECT customer_id, MAX(amount) AS max_amount
+FROM purchase
+GROUP BY customer_id
+ORDER BY max_amount DESC
+LIMIT 5;
