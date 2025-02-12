@@ -1,0 +1,53 @@
+DIFFICULTY:-Medium
+COMPANY:-Netflix
+
+Question:-
+In the Netflix viewing history dataset, you are tasked with identifying viewers who have a consistent viewing pattern across multiple devices. Specifically, 
+viewers who have watched the same title on more than 1 device type. 
+Write an SQL query to find users who have watched more number of titles on multiple devices than the number of titles they watched on single device. 
+Output the user id , no of titles watched on multiple devices and no of titles watched on single device, display the output in ascending order of user_id.
+
+Table:viewing_history
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| user_id     | int         |
+| title       | varchar(20) |
+| device_type | varchar(10) |
++-------------+-------------+
+
+My Solution:-
+WITH overAllData AS(
+SELECT user_id, title, COUNT(device_type) AS totalDeviceType
+FROM viewing_history
+GROUP BY user_id,title
+ ),
+ cal AS(
+ SELECT user_id,
+ SUM(CASE WHEN totalDeviceType>1 THEN 1 ELSE 0 END) AS multipleDeviceCount,
+ SUM(CASE WHEN totalDeviceType=1 THEN 1 ELSE 0 END) AS singleDeviceCount
+ FROM overAllData
+ GROUP BY user_id
+   )
+   
+   SELECT * FROM cal
+   WHERE multipleDeviceCount>singleDeviceCount
+   ORDER BY user_id
+
+Actual Solution:-
+with cte as (
+select user_id,title,count(device_type) as cnt_device_type
+from viewing_history 
+group by user_id,title
+)
+, cte2 as (
+select user_id
+,sum(case when cnt_device_type>1 then 1 else 0 end) as multiple_device_cnt
+,sum(case when cnt_device_type=1 then 1 else 0 end) as single_device_cnt
+from cte 
+group by user_id
+)
+select * 
+from cte2
+where multiple_device_cnt>single_device_cnt
+ORDER BY user_id ;
