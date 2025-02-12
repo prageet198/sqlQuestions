@@ -1,0 +1,39 @@
+DIFFICULTY:-Medium
+COMPANY:-Tiger Analysis
+
+Question:-
+You are given a table with customers information that contains inconsistent and messy data. Your task is to clean the data by writing an SQL query to:
+
+1- Trim extra spaces from the customer name and email fields.
+2- Convert all email addresses to lowercase for consistency.
+3- Remove duplicate records based on email address (keep the record with lower customer id).
+4- Standardize the phone number format to only contain digits (remove dashes, spaces, and special characters).
+5- Replace NULL values in address with 'Unknown'.
+Sort the output by customer id.
+Table: customers
++---------------+----------+
+| COLUMN_NAME   | DATA_TYPE|
++---------------+----------+
+| customer_id   | int      |
+| customer_name | varchar  | 
+| email         | varchar  | 
+| phone         | varchar  | 
+| address       | varchar  | 
++---------------+----------+
+
+My Solution:-
+WITH RankedCustomers AS (
+    SELECT 
+        customer_id,
+        TRIM(customer_name) AS customer_name,  -- Trim spaces from customer_name
+        LOWER(TRIM(email)) AS email,  -- Convert email to lowercase and trim spaces
+        REGEXP_REPLACE(phone, '[^0-9]', '') AS phone,  -- Remove non-digit characters from phone
+        COALESCE(address, 'Unknown') AS address,  -- Replace NULL address with 'Unknown'
+        ROW_NUMBER() OVER (PARTITION BY LOWER(TRIM(email)) ORDER BY customer_id) AS rn  
+        -- Assigns a rank to each duplicate email, keeping the one with the lowest customer_id
+    FROM customers
+)
+SELECT customer_id, customer_name, email, phone, address 
+FROM RankedCustomers
+WHERE rn = 1
+order by customer_id;
