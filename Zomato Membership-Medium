@@ -1,0 +1,69 @@
+DIFFICULTY:-Medium
+COMPANY:-Zomato
+
+Question:-
+Zomato is planning to offer a premium membership to customers who have placed multiple orders in a single day.
+Your task is to write a SQL to find those customers who have placed multiple orders in a single day at least once , 
+total order value generate by those customers and order value generated only by those orders, display the results in ascending order of total order value.
+
+Table: orders (primary key : order_id)
++---------------+-------------+
+| COLUMN_NAME   | DATA_TYPE   |
++---------------+-------------+
+| customer_name | varchar(20) |
+| order_date    | datetime    |
+| order_id      | int         |
+| order_value   | int         |
++---------------+-------------+
+
+My Solution:-
+WITH totalOrdersValue AS (
+  SELECT customer_name, SUM(order_value) AS totalOrder
+  FROM orders
+  GROUP BY customer_name
+  ),
+  dateWiseData AS(
+  SELECT DATE(order_date) AS orderDate,
+  customer_name,
+  order_value
+  FROM orders
+    ),
+    filterData AS(
+   SELECT orderDate, customer_name, COUNT(*) AS totalOrders
+   FROM dateWiseData
+   GROUP BY orderDate,customer_name
+   HAVING COUNT(*)>1
+      ),
+      
+      dayWiseData AS(
+    SELECT
+    dateWiseData.customer_name,
+    SUM(dateWiseData.order_value) AS dayOrderValue
+    FROM filterData INNER JOIN dateWiseData
+    ON filterData.orderDate=dateWiseData.orderDate AND filterData.customer_name=dateWiseData.customer_name
+    GROUP BY dateWiseData.customer_name
+        )
+        
+        SELECT totalOrdersValue.customer_name,
+        totalOrdersValue.totalOrder,
+        dayWiseData.dayOrderValue
+        FROM totalOrdersValue INNER JOIN dayWiseData
+        ON totalOrdersValue.customer_name=dayWiseData.customer_name
+        ORDER BY totalOrdersValue.totalOrder
+
+Actual Solution:-
+with cte as (
+select customer_name,CAST(order_date as DATE) as order_day
+,count(*) as no_of_orders
+ from orders 
+group by customer_name,CAST(order_date as DATE) 
+having count(*)>1
+)
+select orders.customer_name,sum(orders.order_value) as total_order_value
+,sum(case when cte.customer_name is not null then orders.order_value end) as order_value
+from orders
+left join cte on orders.customer_name=cte.customer_name and 
+CAST(orders.order_date as DATE) =cte.order_day
+where orders.customer_name in (select distinct customer_name from cte)
+group by orders.customer_name
+ORDER BY total_order_value;
