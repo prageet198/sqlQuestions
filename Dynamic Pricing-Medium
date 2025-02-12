@@ -1,0 +1,51 @@
+DIFFICULTY:-Medium
+COMPANY:-Amazon
+
+Question:-
+You are given a products table where a new row is inserted every time the price of a product changes. Additionally, there is a transaction table containing details 
+such as order_date and product_id for each order.
+Write an SQL query to calculate the total sales value for each product, considering the cost of the product at the time of the order date, 
+display the output in ascending order of the product_id.
+
+Table: products
++-------------+-----------+
+| COLUMN_NAME | DATA_TYPE |
++-------------+-----------+
+| product_id  | int       |
+| price       | int       |
+| price_date  | date      |
++-------------+-----------+
+Table: orders 
++-------------+-----------+
+| COLUMN_NAME | DATA_TYPE |
++-------------+-----------+
+| order_id    | int       |
+| order_date  | date      |
+| product_id  | int       |
++-------------+-----------+
+
+My Solution:-
+WITH productData AS(
+SELECT product_id,
+price_date,
+price,
+LEAD(price_date,1,'9999-12-31') OVER(PARTITION BY product_id ORDER BY price_date) AS nextDate
+FROM products
+  )
+  SELECT orders.product_id,
+  SUM(price)
+  FROM orders INNER JOIN productData
+  ON orders.product_id=productData.product_id AND (order_date>=price_date AND order_date
+
+Actual Solution:-
+with price_range as (
+select *
+, DATE_ADD(lead(price_date,1,'9999-12-31') over(partition by product_id order by price_date), INTERVAL -1 DAY  ) as price_end_date
+from products
+ )
+select p.product_id , sum(p.price) as total_sales
+from orders o 
+inner join price_range p on o.product_id=p.product_id 
+and o.order_date between p.price_date and p.price_end_date
+group by p.product_id
+ORDER BY p.product_id ASC;
