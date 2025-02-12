@@ -1,0 +1,34 @@
+MEDIUM:-EASY
+COMPANY:-Deloitte
+
+Question:-
+You are provided with a table that lists various product categories, each containing a comma-separated list of products. 
+Your task is to write a SQL query to count the number of products in each category. Sort the result by product count.
+Tables: categories
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| category    | varchar(15) |
+| products    | varchar(30) |
++-------------+-------------+
+
+My Solution:-
+WITH splitedData AS(
+  select category ,
+value AS product
+from categories
+CROSS APPLY STRING_SPLIT(products, ',')
+  )
+  SELECT category,
+  COUNT(*) AS productCount
+  FROM splitedData
+  GROUP BY category
+  ORDER BY COUNT(*)
+
+Actual Solution:-
+SELECT 
+        category,
+        LENGTH(products) - LENGTH(REPLACE(products, ',', '')) + 1 AS product_count
+    FROM 
+        categories
+ORDER BY product_count;
