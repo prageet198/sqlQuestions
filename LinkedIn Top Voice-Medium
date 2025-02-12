@@ -1,0 +1,48 @@
+DIFFICULTY:-Medium
+COMPANY:-LinkedIn
+
+Question:-
+LinkedIn is a professional social networking app. They want to give top voice badge to their best creators to encourage them to create more quality content. 
+A creator qualifies for the badge if he/she satisfies following criteria.
+1- Creator should have more than 50k followers.
+2- Creator should have more than 100k impressions on the posts that they published in the month of Dec-2023.
+3- Creator should have published atleast 3 posts in Dec-2023.
+
+Write a SQL to get the list of top voice creators name along with no of posts and impressions by them in the month of Dec-2023.
+
+Table: creators(primary key : creator_id)
++--------------+-------------+
+| COLUMN_NAME  | DATA_TYPE   |
++--------------+-------------+
+| creator_id   | int         |
+| creator_name | varchar(20) |
+| followers    | int         |
++--------------+-------------+
+Table: posts(primary key : post_id)
++--------------+------------+
+| COLUMN_NAME  | DATA_TYPE  |
++--------------+------------+
+| creator_id   | int        |
+| post_id      | varchar(3) |
+| publish_date | date       |
+| impressions  | int        |
++--------------+------------+
+
+My Solution:-
+WITH postData AS (
+select creator_id, COUNT(post_id) AS totalPost, SUM(impressions) AS totalImpressions
+from posts
+WHERE YEAR(publish_date)='2023' AND MONTH(publish_date)='12'
+GROUP BY creator_id)
+SELECT creator_name, totalPost, totalImpressions
+FROM creators INNER JOIN postData
+ON creators.creator_id=postData.creator_id
+WHERE followers>'50000' AND totalImpressions>'100000' AND totalPost>='3'
+
+Actual Solution:-
+select c.creator_name,count(p.post_id) as no_of_posts, sum(p.impressions) as total_impressions
+from creators c
+inner join posts p on c.creator_id=p.creator_id
+where c.followers>50000 and DATE_FORMAT(p.publish_date,'%Y%m')='202312'
+group by c.creator_name
+having sum(p.impressions)>100000 and count(p.post_id)>=3 ;
