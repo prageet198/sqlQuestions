@@ -1,0 +1,32 @@
+DIFFICULTY:-Medium
+COMPANY:-Zepto
+
+Question:-
+You have a table named numbers containing a single column n. You are required to generate an output that expands each number n into a sequence where the number appears n times.
+
+
+Table: numbers 
++-------------+-----------+
+| COLUMN_NAME | DATA_TYPE |
++-------------+-----------+
+| n           |   int     |    
++-------------+-----------+
+
+My Solution:-
+WITH RECURSIVE NumberSeries AS (
+    SELECT
+        n AS original_number,
+        n AS expanded_number,
+        1 AS sequence_length
+    FROM numbers
+    UNION ALL
+    SELECT
+        ns.original_number,
+        ns.expanded_number,
+        ns.sequence_length + 1
+    FROM NumberSeries ns
+    WHERE ns.sequence_length < ns.original_number
+)
+SELECT expanded_number
+FROM NumberSeries
+ORDER BY original_number, sequence_length;
