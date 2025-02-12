@@ -1,0 +1,59 @@
+DIFFICULTY:-Medium
+COMAPANY:-Deolitte
+
+Question:-
+You are tasked to determine the mother and father's name for each child based on the given data. The people table provides information about individuals, 
+including their names and genders. The relations table specifies parent-child relationships, linking each child (c_id) to their parent (p_id). 
+Each parent is identified by their ID, and their gender is used to distinguish between mothers (F) and fathers (M).
+
+Write an SQL query to retrieve the names of each child along with the names of their respective mother and father, if available. If a child has only one parent 
+listed in the relations table, the query should still include that parent's name and leave the other parent's name as NULL. Order the output by child name in ascending order.
+
+Tables: people
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| gender      | char(2)     |
+| id          | int         |
+| name        | varchar(20) |
++-------------+-------------+
+Tables: relations 
++-------------+-----------+
+| COLUMN_NAME | DATA_TYPE |
++-------------+-----------+
+| c_id        | int       |
+| p_id        | int       |
++-------------+-----------+
+
+My Solution:-
+WITH motherDetail AS (
+  SELECT relations.c_id,people.name AS motherName
+  FROM relations INNER JOIN people ON relations.p_id=people.id AND people.gender='F'
+  ),
+  fatherDetail AS(
+    SELECT relations.c_id,people.name AS fatherName
+  FROM relations INNER JOIN people ON relations.p_id=people.id AND people.gender='M'
+    )
+    SELECT people.name AS childName, motherName,fatherName
+    FROM relations INNER JOIN people ON relations.c_id=people.id
+    LEFT JOIN motherDetail ON motherDetail.c_id=relations.c_id
+    LEFT JOIN fatherDetail ON fatherDetail.c_id=relations.c_id
+    GROUP BY people.name, motherName, fatherName
+    ORDER BY people.name
+
+Actual Solution:-
+WITH mother_father AS (
+    SELECT r.c_id AS child_id,
+           max(p1.name) AS mother_name,
+           max(p2.name) AS father_name
+    FROM relations r
+    LEFT JOIN people p1 ON r.p_id = p1.id AND p1.gender = 'F' -- Join with people table to get mother's name
+    LEFT JOIN people p2 ON r.p_id = p2.id AND p2.gender = 'M' -- Join with people table to get father's name
+    group by r.c_id
+)
+SELECT p.name AS child_name,
+       mf.mother_name,
+       mf.father_name
+FROM people p
+INNER JOIN mother_father mf ON p.id = mf.child_id
+order by child_name;
