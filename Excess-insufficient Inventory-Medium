@@ -1,0 +1,70 @@
+DIFFICULTY:-MEDIUM
+COMPANY:-Flipkart
+
+Question:-
+Suppose you are a data analyst working for Flipkart. Your task is to identify excess and insufficient inventory at various Flipkart warehouses in terms of no of units and cost. 
+Excess inventory is when inventory levels are greater than inventory targets else its insufficient inventory.
+
+Write an SQL to derive excess/insufficient Inventory volume and value in cost for each location as well as at overall company level, display the results in ascending 
+order of location id.
+
+Table: inventory
++------------------+-----------+
+| COLUMN_NAME      | DATA_TYPE |
++------------------+-----------+
+| inventory_level  | int       |
+| inventory_target | int       |
+| location_id      | int       |
+| product_id       | int       |
++------------------+-----------+
+Table: products
++-------------+--------------+
+| COLUMN_NAME | DATA_TYPE    |
++-------------+--------------+
+| product_id  | int          |
+| unit_cost   | decimal(5,2) |
++-------------+--------------+
+
+My Solution:-
+WITH calculation AS (
+select inventory.location_id,
+SUM((inventory.inventory_level-inventory.inventory_target)) AS excessInsufficientQty,
+SUM((inventory.inventory_level-inventory.inventory_target) * products.unit_cost) AS excessInsufficientValue
+from inventory INNER JOIN products
+ON inventory.product_id=products.product_id
+GROUP BY inventory.location_id
+  ),
+  combinedAll AS (
+  SELECT 'Overall' AS location_id,
+  SUM(excessInsufficientQty) AS excessInsufficientQty,
+  SUM(excessInsufficientValue) AS excessInsufficientValue 
+  FROM calculation
+    )
+    
+    SELECT CAST(location_id as CHAR) as location_id,
+    excessInsufficientQty,
+    excessInsufficientValue
+    FROM calculation
+    UNION ALL
+    SELECT location_id,
+    excessInsufficientQty,
+    excessInsufficientValue
+    FROM combinedAll
+
+Actual Solution:-
+with cte as (
+select i.location_id as location_id
+,sum(inventory_level-inventory_target) as excess_insufficient_qty
+,sum((inventory_level-inventory_target)*p.unit_cost) as excess_insufficient_value 
+from inventory i 
+inner join products p on i.product_id=p.product_id
+group by i.location_id)
+
+select CAST(location_id as CHAR) as location_id , excess_insufficient_qty,excess_insufficient_value
+from cte
+union all
+select 'Overall' as location_id 
+, sum(excess_insufficient_qty) as excess_insufficient_qty
+, sum(excess_insufficient_value) as excess_insufficient_value
+from cte
+ORDER BY location_id;
