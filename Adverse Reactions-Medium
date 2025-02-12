@@ -1,0 +1,89 @@
+DIFFICULTY:-Medium
+COMPANY:-Deolitte
+
+Question:-
+In the field of pharmacovigilance, it's crucial to monitor and assess adverse reactions that patients may experience after taking certain medications. 
+Adverse reactions, also known as side effects, can range from mild to severe and can impact the safety and efficacy of a medication.
+For each medication, count the number of adverse reactions reported within the first 30 days of the prescription being issued. 
+Assume that the prescription date in the Prescriptions table represents the start date of the medication usage, display the output in ascending order of medication name.
+
+Table: patients
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| patient_id  | int         |
+| name        | varchar(20) |
+| age         | int         |
+| gender      | varchar(10) |
++-------------+-------------+
+Table: medications
++-----------------+-------------+
+| COLUMN_NAME     | DATA_TYPE   |
++-----------------+-------------+
+| manufacturer    | varchar(20) |
+| medication_id   | int         |
+| medication_name | varchar(20) |
++-----------------+-------------+
+Table: prescriptions
++-------------------+-----------+
+| COLUMN_NAME       | DATA_TYPE |
++-------------------+-----------+
+| prescription_id   | int       |
+| patient_id        | int       |
+| medication_id     | int       |
+| prescription_date | date      |
++-------------------+-----------+
+Table: adverse_reactions
++----------------------+-------------+
+| COLUMN_NAME          | DATA_TYPE   |
++----------------------+-------------+
+| patient_id           | int         |
+| reaction_date        | date        |
+| reaction_description | varchar(20) |
+| reaction_id          | int         |
++----------------------+-------------+
+
+My Solution:-
+WITH prescriptionData AS(
+select patient_id,
+medication_id,
+prescription_date,
+DATE_ADD(prescription_date, INTERVAL 29 DAY) AS prescriptionEndDate
+from prescriptions
+  ),
+  calculation AS (
+  SELECT prescriptionData.patient_id,
+  prescriptionData.medication_id,
+  prescriptionData.prescription_date,
+  prescriptionData.prescriptionEndDate,
+  adverse_reactions.reaction_date
+  FROM prescriptionData INNER JOIN adverse_reactions ON prescriptionData.patient_id=adverse_reactions.patient_id AND (adverse_reactions.reaction_date BETWEEN prescriptionData.prescription_date AND prescriptionData.prescriptionEndDate)
+    ),
+    fineCalculation AS(
+    SELECT medication_id,
+    COUNT(*) AS totalAdverseReaction
+    FROM calculation
+    GROUP BY calculation.medication_id
+      )
+      SELECT medications.medication_name,
+      medications.manufacturer,
+      IFNULL(totalAdverseReaction,0) AS totalAdverseReaction
+      FROM medications LEFT JOIN fineCalculation ON
+      medications.medication_id=fineCalculation.medication_id
+      ORDER BY medications.medication_name
+
+Actual Solution:-
+SELECT 
+    m.medication_name,
+    m.manufacturer,
+    COUNT(AR.reaction_id) AS num_adverse_reactions
+FROM 
+    Medications m
+INNER JOIN 
+    Prescriptions p ON M.medication_id = p.medication_id
+LEFT JOIN 
+    adverse_reactions ar ON p.patient_id = AR.patient_id
+                        AND AR.reaction_date BETWEEN P.prescription_date AND DATE_ADD(P.prescription_date , INTERVAL 30 DAY)
+GROUP BY 
+    m.medication_name, m.manufacturer
+ORDER BY m.medication_name;
