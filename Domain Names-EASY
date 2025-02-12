@@ -1,0 +1,23 @@
+MEDIUM:-EASY
+COMPANY:-Deloitte
+Question:-
+Write an SQL query to extract the domain names from email addresses stored in the Customers table.
+
+Tables: Customers
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| CustomerID  | int         |
+| Email       | varchar(25) |
++-------------+-------------+
+
+My Solution:-
+select * ,
+SUBSTRING(email, CHARINDEX('@', email) + 1, LEN(email) - CHARINDEX('@', email)) AS domain_name
+from customers;
+
+Actual Solution:-
+SELECT 
+    Email,
+    SUBSTRING(Email, INSTR(Email, '@') + 1) AS domain_name
+FROM Customers;
