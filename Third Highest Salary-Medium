@@ -1,0 +1,42 @@
+DIFFICULTY:-Medium
+COMPANY:-Amazon
+
+Question:-
+You are working with an employee database where each employee has a department id and a salary. Your task is to find the third highest salary in each department. 
+If there is no third highest salary in a department, then the query should return salary as null for that department. Sort the output by department id.
+Assume that none of the employees have same salary in a particular department.
+Table: employees 
++---------------+----------+
+| COLUMN_NAME   | DATA_TYPE|
++---------------+----------+
+| employee_id   | int      |
+| department_id | int      |
+| salary        | int      |
++---------------+----------+
+
+My Solution:-
+WITH departmentData AS(
+select department_id,
+salary,
+RANK() OVER(PARTITION BY department_id ORDER BY salary DESC) AS ranked
+from employees
+  )
+  SELECT DISTINCT employees.department_id, departmentData.salary
+  FROM employees LEFT JOIN departmentData ON employees.department_id=departmentData.department_id AND ranked=3
+
+Actual Solution:-
+WITH RankedSalaries AS (
+    SELECT 
+        department_id,
+        salary,
+        RANK() OVER (PARTITION BY department_id ORDER BY salary DESC) AS rn
+    FROM employees
+)
+SELECT 
+    e.department_id,
+    r.salary AS third_highest_salary
+FROM 
+    (SELECT DISTINCT department_id FROM employees) e
+LEFT JOIN RankedSalaries r 
+    ON e.department_id = r.department_id and rn=3
+order by   e.department_id;
