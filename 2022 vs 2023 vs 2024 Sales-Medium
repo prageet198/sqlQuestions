@@ -1,0 +1,40 @@
+DIFFICULTY:-Medium
+COMPANY:-Deolitte
+
+Question:-
+You are tasked with analyzing the sales growth of products over the years 2022, 2023, and 2024. Your goal is to identify months where the sales for a 
+product have consistently increased from 2022 to 2023 and from 2023 to 2024.
+Your task is to write an SQL query to generate a report that includes the sales for each product at the month level for the years 2022, 2023, and 2024. 
+However, you should only include product and months combination where the sales have consistently increased from 2022 to 2023 and from 2023 to 2024, 
+display the output in ascending order of product_id.
+Table: orders
++-------------+-----------+
+| COLUMN_NAME | DATA_TYPE |
++-------------+-----------+
+| order_id    | int       |
+| customer_id | int       |
+| order_date  | date      |
+| product_id  | int       |
+| sales       | int       |
++-------------+-----------+
+
+My Solution:-
+WITH overAllSales AS(
+select product_id,
+SUM(sales) AS totalSales,
+YEAR(order_date) AS salesYear,
+MONTH(order_date) AS salesMonth
+from orders
+GROUP BY product_id, MONTH(order_date), YEAR(order_date)
+  ),
+  monthlyYearlySales AS(
+  SELECT product_id, salesMonth,
+  SUM(CASE WHEN salesYear='2022' THEN totalSales ELSE 0 END) AS sales2022,
+  SUM(CASE WHEN salesYear='2023' THEN totalSales ELSE 0 END) AS sales2023,
+  SUM(CASE WHEN salesYear='2024' THEN totalSales ELSE 0 END) AS sales2024
+  FROM overAllSales
+     GROUP BY product_id,salesMonth
+    )
+    SELECT * FROM monthlyYearlySales
+    WHERE sales2024>sales2023 AND sales2023>sales2022
+    ORDER BY product_id
