@@ -1,0 +1,47 @@
+MEDIUM:-EASY
+COMPANY:-Accenture
+
+Question:-
+Write an SQL query to find the average salaries of employees at each salary level. "Salary Level" are defined as per below conditions:
+If the salary is less than 50000, label it as "Low".
+If the salary is between 50000 and 100000 (inclusive), label it as "Medium".
+If the salary is greater than 100000, label it as "High".
+Round the average to nearest integer. Display the output in ascending order of salary level.
+
+Tables: Employees
++---------------+--------------+
+| COLUMN_NAME   | DATA_TYPE    |
++---------------+--------------+
+| employee_id   | int          |
+| employee_name | varchar(20) |
+| salary        | int          |
++---------------+--------------+
+
+My Solution:-
+WITH empSalaryLevel AS (
+SELECT employee_id,
+salary,
+CASE WHEN salary<'50000' THEN 'Low'
+	WHEN salary >='50000' AND salary <='100000' THEN 'Medium'
+    ELSE 'High' END AS salaryLevel
+from employees)
+
+SELECT salaryLevel,
+round(avg(salary),0)AS avgSalary
+FROM empSalaryLevel
+GROUP BY salaryLevel
+ORDER BY salaryLevel
+
+Actual Solution:-
+with cte as (SELECT employee_name, salary,
+    CASE
+        WHEN salary < 50000 THEN 'Low'
+        WHEN salary BETWEEN 50000 AND 100000 THEN 'Medium'
+        ELSE 'High'
+    END AS Salary_Level
+FROM 
+    employees)
+select Salary_Level , round(avg(salary),0) as avg_salary
+from cte
+group by Salary_Level 
+ORDER BY Salary_Level ;
