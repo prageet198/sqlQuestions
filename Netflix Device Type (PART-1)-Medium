@@ -1,0 +1,55 @@
+DIFFICULTY:-Medium
+COMPANY:-Netflix
+
+Question:-
+In the Netflix dataset containing information about viewers and their viewing history, devise a query to identify viewers who primarily use mobile devices for viewing, 
+but occasionally switch to other devices. Specifically, find viewers who have watched at least 75% of their total viewing time on mobile devices 
+but have also used at least one other devices such as tablets or smart TVs for viewing. Provide the user ID and the percentage of viewing time spent on mobile devices. 
+Round the result to nearest integer.
+
+Table: viewing_history
++-------------+--------------+
+| COLUMN_NAME | DATA_TYPE    |
++-------------+--------------+
+| user_id     | int          |
+| title       | varchar(20)  |
+| device_type | varchar(10)  |
+| watch_mins  | int          |
++-------------+--------------+
+
+My Solution:-
+WITH totalViews AS (
+  select user_id, SUM(watch_mins) AS totalViews
+  from viewing_history
+  GROUP BY user_id
+  ),
+  mobileView AS (
+    SELECT user_id, SUM(watch_mins) AS totalMobileViews
+    FROM viewing_history 
+    WHERE device_type='Mobile'
+    GROUP BY user_id
+    ),
+    otherView AS (
+      SELECT user_id, SUM(watch_mins) AS totalOtherViews
+      FROM viewing_history
+      WHERE device_type!='Mobile'
+      GROUP BY user_id
+      )
+      SELECT totalViews.user_id,
+      ROUND((totalMobileViews/totalViews)*100,0) AS mobilePercView
+      FROM totalViews INNER JOIN mobileView ON totalViews.user_id=mobileView.user_id
+      INNER JOIN otherView ON otherView.user_id=mobileView.user_id
+      WHERE ROUND((totalMobileViews/totalViews)*100,2)>=75
+
+Actual Solution:-
+with cte as (
+select user_id, count(distinct device_type) as cnt_device
+, sum(case when device_type='Mobile' then watch_mins end) as mobile_watch_mins
+,sum(watch_mins) as total_watch_mins
+from viewing_history 
+group by user_id
+)
+select user_id,ROUND( mobile_watch_mins*100.0/total_watch_mins ,0 ) as mobile_percentage_view
+ from cte 
+where cnt_device >=2 
+and (mobile_watch_mins*1.0/total_watch_mins) > 0.75;
