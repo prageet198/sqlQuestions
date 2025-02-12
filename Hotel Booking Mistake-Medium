@@ -1,0 +1,40 @@
+DIFFICULTY:-Medium
+COMPANY:-Make My Trip
+
+Question:-
+A hotel has accidentally made overbookings for certain rooms on specific dates. Due to this error, some rooms have been assigned to multiple customers for overlapping periods, leading to potential conflicts. The hotel management needs to rectify this 
+mistake by contacting the affected customers and providing them with alternative arrangements.
+Your task is to write an SQL query to identify the overlapping bookings for each room and determine the list of 
+customers affected by these overlaps. For each room and overlapping date, the query should list the customers who have booked the room for that date. 
+
+A booking's check-out date is not inclusive, meaning that if a room is booked from April 1st to April 4th, it is considered occupied from April 1st to April 3rd , 
+another customer can check-in on April 4th and that will not be considered as overlap.
+
+Order the result by room id, booking date. You may use calendar dim table which has all the dates for the year April 2024.
+Table : bookings
++----------------+-----------+
+| COLUMN_NAME    | DATA_TYPE |
++----------------+-----------+
+| room_id        | int       |
+| customer_id    | int       |
+| check_in_date  | date      |
+| check_out_date | date      |
++----------------+-----------+
+Table : calendar_dim
++-------------+-----------+
+| COLUMN_NAME | DATA_TYPE |
++-------------+-----------+
+| cal_date    | date      |
++-------------+-----------+
+
+My Solution:-
+WITH initialData AS (
+select bookings.room_id, bookings.customer_id, calendar_dim.cal_date AS bookingDate
+from bookings INNER JOIN calendar_dim
+ON calendar_dim.cal_date>=bookings.check_in_date AND calendar_dim.cal_date<bookings.check_out_date
+  )
+  SELECT room_id, bookingDate, GROUP_CONCAT(customer_id ORDER BY customer_id) AS customers
+  FROM initialData
+  GROUP BY room_id, bookingDate
+  HAVING COUNT(*)>1
+  ORDER BY room_id, bookingDate
