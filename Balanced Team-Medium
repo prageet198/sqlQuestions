@@ -1,0 +1,34 @@
+DIFFICULTY:-Medium
+COMPANY:-KPMG
+
+Question:-
+Suppose you are a manager of a data analytics company. You are tasked to build a new team consists of senior and junior data analysts. 
+The total budget for the salaries is 70000.  You need to use the below criterion for hiring:
+
+1- Keep hiring the seniors with the smallest salaries until you cannot hire anymore seniors.
+2- Use the remaining budget to hire the juniors with the smallest salaries until you cannot hire anymore juniors.
+Display employee id, experience and salary. Sort in decreasing order of salary.
+Table: candidates
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| emp_id      | int         |
+| experience  | varchar(6) |
+| salary      | int         |
++-------------+-------------+
+
+My Solution:-
+WITH overAllSal AS (
+  SELECT *,
+  SUM(salary) OVER (PARTITION BY experience ORDER BY salary ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS runningSalary
+  FROM candidates
+  ),
+  seniorSal AS(
+    SELECT * FROM overAllSal
+    WHERE experience='Senior' AND runningSalary<=70000
+    )
+    SELECT  emp_id,experience,salary FROM seniorSal
+    UNION ALL
+    SELECT  emp_id,experience,salary FROM overAllSal
+    WHERE experience='Junior' AND runningSalary<=70000-(SELECT SUM(salary) FROM seniorSal)
+    ORDER BY salary DESC;
