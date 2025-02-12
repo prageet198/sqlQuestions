@@ -1,0 +1,38 @@
+MEDIUM:-EASY
+COMPANY:-Flipkart
+
+Question:-
+Write an SQL query to retrieve the total sales amount in each category. Include all categories, if no products were sold in a category display as 0. 
+Display the output in ascending order of total_sales.
+
+Tables: sales
++-------------+-----------+
+| COLUMN_NAME | DATA_TYPE |
++-------------+-----------+
+| amount      | int       |
+| category_id | int       |
+| sale_date   | date      |
+| sale_id     | int       |
++-------------+-----------+
+Tables: Categories
++---------------+-------------+
+| COLUMN_NAME   | DATA_TYPE   |
++---------------+-------------+
+| category_id   | int         |
+| category_name | varchar(12) |
++---------------+-------------+
+
+My Solution:-
+select categories.category_name,
+ISNULL(SUM(sales.amount),0) AS salesAmt
+from categories LEFT JOIN sales
+ON categories.category_id = sales.category_id
+GROUP BY categories.category_name
+ORDER BY salesAmt
+
+Actual Solution:-
+SELECT c.category_name, COALESCE(SUM(s.amount), 0) AS total_sales
+FROM categories c
+LEFT JOIN sales s ON c.category_id = s.category_id
+GROUP BY c.category_name
+ORDER BY total_sales;
