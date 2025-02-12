@@ -1,0 +1,43 @@
+DIFFICULTY:-Medium
+COMPANY:-Microsoft
+
+Question:-
+You are given the data of employees along with their salary and department. Write an SQL to find list of employees who have salary greater than average employee 
+salary of the company.  However, while calculating the company average salary to compare with an employee salary do not consider salaries of that employee's department, 
+display the output in ascending order of employee ids.
+
+Table: employee
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| emp_id      | int         |
+| salary      | int         |
+| department  | varchar(15) |
++-------------+-------------+
+
+My Solution:-
+WITH overallAvgSal AS (
+  SELECT AVG(salary) AS compAvgSala 
+  FROM employee
+),
+deptAvgSal AS (
+  SELECT department, AVG(salary) AS deptAvgSal
+  FROM employee
+  GROUP BY department
+)
+SELECT department, 
+       CASE 
+           WHEN compAvgSala > deptAvgSal THEN compAvgSala - deptAvgSal 
+           ELSE deptAvgSal - compAvgSala 
+       END AS leftAvg
+FROM deptAvgSal 
+CROSS JOIN overallAvgSal;
+
+Actual Solution:-
+select * from 
+employee e1
+where salary > (select avg(e2.salary) 
+from employee e2 
+where e1.department != e2.department
+)
+ORDER BY emp_id ;
