@@ -1,0 +1,70 @@
+DIFFICULTY:-Medium
+COMPANY:-Agoda
+
+Question:-
+Please refer to the 3 tables below from a football tournament. Write an SQL which lists every game with the goals scored by each team. 
+The result set should show: match id, match date, team1, score1, team2, score2. Sort the result by match id.
+Please note that score1 and score2 should be number of goals scored by team1 and team2 respectively.
+
+Table: team 
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| id          | int         |
+| name        | varchar(20) |
+| coach       | varchar(20) |
++-------------+-------------+
+Table: game
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| match_id    | int         |
+| match_date  | date        |
+| stadium     | varchar(20) |
+| team1       | int         |
+| team2       | int         |
++-------------+-------------+
+Table: goal 
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| match_id    | int         |
+| team_id     | int         |
+| player      | varchar(20) |
+| goal_time   | time        |
++-------------+-------------+
+
+My Solution:-
+WITH totalGoals AS(
+select match_id, team_id, COUNT(*) AS totalGoal
+from goal
+GROUP BY match_id, team_id
+  ),
+  team1Deatil AS(
+  SELECT match_id, team1
+  FROM game
+    ),
+    team2Detail AS(
+      SELECT match_id, team2
+  FROM game
+      ),
+      team1TotalGoal AS(
+  SELECT team1Deatil.match_id, team1Deatil.team1, totalGoals.totalGoal
+  FROM team1Deatil INNER JOIN totalGoals ON team1Deatil.match_id=totalGoals.match_id AND team1Deatil.team1=totalGoals.team_id
+        ),
+        team2TotalGoal AS (
+          SELECT team2Detail.match_id, team2Detail.team2, totalGoals.totalGoal
+  FROM team2Detail INNER JOIN totalGoals ON team2Detail.match_id=totalGoals.match_id AND team2Detail.team2=totalGoals.team_id
+          )
+          SELECT game.match_id, game.match_date, game.team1,IFNULL(team1TotalGoal.totalGoal,0) AS team1Score,
+          game.team2,IFNULL(team2TotalGoal.totalGoal,0) AS team2Score
+          FROM game LEFT JOIN team1TotalGoal ON game.match_id=team1TotalGoal.match_id
+          LEFT JOIN team2TotalGoal ON team2TotalGoal.match_id=game.match_id
+
+Actual Solution:-
+select game.match_id,game.match_date,team1, sum(case when team1=team_id then 1 else 0 end) as score1
+,team2, sum(case when team2=team_id then 1 else 0 end) as score2
+from game 
+left join goal on game.match_id=goal.match_id
+group by game.match_id,game.match_date,team1,team2
+order by game.match_id;
