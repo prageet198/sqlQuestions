@@ -1,0 +1,71 @@
+DIFFICULTY:-Hard
+COMPANY:-Google
+
+Question:-
+Given a sample table with emails sent vs. received by the users, calculate the response rate (%) which is given as emails sent/ emails received. 
+For simplicity consider sent emails are delivered. List all the users that fall under the top 25 percent based on the highest response rate.
+Please consider users who have sent at least one email and have received at least one email.
+
+Table : gmail_data
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| from_user   | varchar(20) |
+| to_user     | varchar(20) |
+| email_day   | date        |
++-------------+-------------+
+
+My Solution:-
+WITH totalSend AS(
+SELECT from_user, COUNT(*) AS totalEmailSent
+from gmail_data
+GROUP BY from_user
+),
+totalReceived AS(
+SELECT to_user, COUNT(*) AS totalEmailReceive
+from gmail_data
+GROUP BY to_user
+),
+finalData AS(
+SELECT totalSend.from_user, (totalEmailSent/totalEmailReceive)*100.0 AS responseRate,
+ntile(4) OVER(ORDER BY (totalEmailSent *1.0 /totalEmailReceive) DESC) AS quartile
+FROM totalSend INNER JOIN totalReceived
+ON totalSend.from_user=totalReceived.to_user
+WHERE totalEmailSent>=1 AND totalEmailReceive>=1
+)
+SELECT from_user, responseRate
+FROM finalData
+WHERE quartile='1'
+
+Actual Solution:-
+WITH sent_emails as (
+  SELECT
+    from_user,
+    COUNT(*) as emails_sent
+  FROM
+    gmail_data g1
+  GROUP BY 1
+),
+received_emails as (
+  SELECT
+    to_user,
+    COUNT(*) as emails_received
+  FROM
+    gmail_data g2
+  GROUP BY 1
+),
+summarized_view as (
+  SELECT
+    from_user as user_id,
+    (emails_sent * 100.0 / emails_received) as response_rate,
+    ntile(4) OVER (ORDER BY (emails_sent * 1.0 / emails_received) desc) as quartile
+  FROM
+    sent_emails
+    inner JOIN received_emails on sent_emails.from_user = received_emails.to_user
+)
+SELECT
+  user_id,
+  response_rate
+FROM
+  summarized_view
+WHERE quartile=1  ;
