@@ -1,0 +1,68 @@
+DIFFICULTY:-Extremely Hard
+COMPANY:-Deolitte
+
+Question:-
+You are tasked with writing an SQL query to determine whether a leave request can be approved for each employee based on their available leave balance for 2024. 
+Employees receive 1.5 leaves at the start of each month, and they may have some balance leaves carried over from the previous year 2023(available in employees table). 
+A leave request can only be approved if the employee has a sufficient leave balance at the start date of planned leave period. 
+
+Write an SQL to derive a new status column stating if leave request is Approved or Rejected for each leave request. Sort the output by request id. 
+Consider the following assumptions:
+
+1- If a leave request is eligible for approval, then it will always be taken by employee and leave balance will be deducted as per the leave period. 
+If the leave is rejected then the balance will not be deducted.
+2- A leave will either be fully approved or cancelled. No partial approvals possible.
+3- If a weekend is falling between the leave start and end date then do consider them when calculating the leave days, Meaning no exclusion of weekends.
+Tables:employees
++-------------------------+-------------+
+| COLUMN_NAME             | DATA_TYPE   |
++-------------------------+-------------+
+| employee_id             | int         |
+| leave_balance_from_2023 | int         |
+| name                    | varchar(20) |
++-------------------------+-------------+
+Tables:leave_requests
++------------------+-----------+
+| COLUMN_NAME      | DATA_TYPE |
++------------------+-----------+
+| request_id       | int       |
+| employee_id      | int       |
+| leave_start_date | date      |
+| leave_end_date   | date      |
++------------------+-----------+
+
+My Solution:-
+WITH recursive cte as (
+select lr.*, e.leave_balance_from_2023
+,MONTH(leave_start_date) as leave_start_month
+, DATEDIFF(leave_end_date ,leave_start_date)+1 as leave_days
+,row_number() over(partition by lr.employee_id order by lr.leave_start_date) as rn
+ from leave_requests lr 
+ inner join employees e on lr.employee_id=e.employee_id
+)
+, r_cte as (
+select request_id,leave_start_date,leave_end_date,employee_id,leave_start_month
+,case when leave_balance_from_2023+leave_start_month*1.5 >= leave_days 
+then leave_balance_from_2023+leave_start_month*1.5-leave_days
+else leave_balance_from_2023+leave_start_month*1.5
+ end  as balance_leaves 
+, case when leave_balance_from_2023+leave_start_month*1.5 >= leave_days 
+then 'Approved' else 'Rejected' end as status
+,rn
+from cte where rn=1
+union all
+select cte.request_id,cte.leave_start_date,cte.leave_end_date,cte.employee_id,cte.leave_start_month
+,case when r_cte.balance_leaves+(cte.leave_start_month-r_cte.leave_start_month)*1.5 > cte.leave_days
+then r_cte.balance_leaves+(cte.leave_start_month-r_cte.leave_start_month)*1.5 - cte.leave_days
+else r_cte.balance_leaves+(cte.leave_start_month-r_cte.leave_start_month)*1.5 
+end as balance_leaves
+,case when r_cte.balance_leaves+(cte.leave_start_month-r_cte.leave_start_month)*1.5 > cte.leave_days
+then 'Approved' else 'Rejected' end as status
+,cte.rn
+from cte 
+inner join r_cte on cte.employee_id=r_cte.employee_id 
+and cte.rn=r_cte.rn+1
+)
+select request_id,employee_id,leave_start_date,leave_end_date,status
+ from r_cte
+order by request_id;
