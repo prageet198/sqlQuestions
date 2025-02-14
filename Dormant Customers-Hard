@@ -1,0 +1,70 @@
+DIFFICULTY:-Hard
+COMPANY:-Swiggy
+
+Question:-
+Imagine you are working for Swiggy (a food delivery service platform). As part of your role in the data analytics team, you're tasked 
+with identifying dormant customers - those who have registered on the platform but have not placed any orders recently. 
+Identifying dormant customers is crucial for targeted marketing efforts and customer re-engagement strategies.
+
+A dormant customer is defined as a user who registered more than 6 months ago from today but has not placed any orders in the last 3 months. 
+Your query should return the list of dormant customers and order amount of last order placed by them. If no order was placed by a customer 
+then order amount should be 0. order the output by user id.
+
+Note: All the dates are in UTC time zone.
+
+Table: users
++--------------+----------+
+| COLUMN_NAME  | DATA_TYPE|
++--------------+----------+
+| user_id      | int      |
+| name         | varchar  | 
+| email        | varchar  |
+| signup_date  | date     |
++--------------+--------- +
+Table: orders
++--------------+----------+
+| COLUMN_NAME  | DATA_TYPE|
++--------------+----------+
+| order_id     | int      |
+| order_date   | date     | 
+| user_id      | int      |
+| order_amount | int      |
++--------------+----------+
+
+My Solution:-
+WITH userData AS(
+SELECT user_id
+from users
+WHERE DATEDIFF(CURDATE(), signup_date)>180
+),
+lastOrderData AS(
+SELECT user_id, order_date, order_amount,
+ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY order_date DESC) AS ranked,
+  DATE_SUB(CURDATE(), INTERVAL 3 MONTH) AS three_months_ago
+FROM orders
+),
+filterData AS(
+SELECT userData.user_id, order_date, order_amount, three_months_ago
+FROM userData LEFT JOIN lastOrderData ON userData.user_id=lastOrderData.user_id AND ranked=1
+),
+summary AS(
+SELECT * , CASE WHEN order_date BETWEEN three_months_ago AND CURDATE() THEN 0
+ELSE 1 END AS flag
+FROM filterData
+)
+SELECT user_id, IFNULL(order_amount,0) AS lastOrderAmt
+FROM summary
+WHERE flag='1'
+ORDER BY user_id
+
+Actual Solution:-
+WITH cte AS (
+    SELECT *, ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY order_date DESC) AS rn
+    FROM Orders
+)
+SELECT Users.user_id, COALESCE(cte.order_amount, 0) AS last_order_amount
+FROM Users
+LEFT JOIN cte ON Users.user_id = cte.user_id AND cte.rn = 1
+WHERE Users.signup_date < DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+  AND (TIMESTAMPDIFF(DAY, cte.order_date, CURDATE()) > 90 OR cte.order_date IS NULL)
+ORDER BY Users.user_id ASC;
