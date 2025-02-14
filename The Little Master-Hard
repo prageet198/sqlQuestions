@@ -1,0 +1,46 @@
+DIFFICULTY:-Hard
+COMPANY:-Google
+
+Question:-
+Sachin Tendulkar - Also known as little master. You are given runs scored by Sachin in his first 10 matches. You need to write an SQL 
+to get match number when he completed 500 runs and his batting average at the end of 10 matches.
+
+Batting Average = (Total runs scored) / (no of times batsman got out)
+
+Round the result to 2 decimal places.
+
+Table: sachin
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| match_no    | int         |
+| runs_scored | int         |
+| status      | varchar(10) |
++-------------+-------------+
+
+My Solution:-
+WITH matchAnl AS (
+SELECT match_no, SUM(runs_scored) OVER(ORDER BY match_no) AS runningScore
+FROM sachin
+  ),
+ battingAvg AS(
+   SELECT 
+ROUND(SUM(runs_scored)/SUM(CASE WHEN status='out' THEN 1 ELSE 0 END),2) AS battingAvg
+FROM sachin
+   )
+   SELECT match_no,battingAvg
+   FROM matchAnl INNER JOIN battingAvg ON 1=1
+   WHERE runningScore>500
+   LIMIT 1
+
+Actual Solution:-
+with cte as (
+select *
+,sum(runs_scored) over()*1.0 / sum(case when status='out' then 1 else 0 end) over() as batting_average
+,sum(runs_scored) over(order by match_no rows between unbounded preceding and current row) as running_sum
+from sachin
+)
+select match_no,CAST(round(batting_average,2) as DECIMAL(10,2)) as batting_average
+from (select *, row_number() over(order by running_sum) as rn
+from cte where running_sum>500) s
+where rn=1;
