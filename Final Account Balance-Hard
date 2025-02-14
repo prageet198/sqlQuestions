@@ -1,0 +1,66 @@
+DIFFICULTY:-Hard
+COMPANY:-Deolitte
+
+Question:-
+You are given history of your bank account for the year 2020. Each transaction is either a credit card payment or incoming transfer. 
+There is a fee of holding a credit card which you have to pay every month, Fee is 5 per month. However, you are not charged for a given month 
+if you made at least 2 credit card payments for a total cost of at least 100 within that month. Note that this fee is not included in the supplied history of transactions.
+Each row in the table contains information about a single transaction. If the amount value is negative, it is a credit card payment otherwise it is an incoming transfer. 
+At the beginning of the year, the balance of your account was 0 . Your task is to compute the balance at the end of the year. 
+
+Table : Transactions 
++------------------+-----------+
+| COLUMN_NAME      | DATA_TYPE |
++------------------+-----------+
+| amount           | int       |
+| transaction_date | date      |
++------------------+-----------+
+
+My Solution:-
+WITH RECURSIVE months AS (
+    SELECT 1 AS month_id
+    UNION ALL
+    SELECT month_id + 1
+    FROM months
+    WHERE month_id < 12
+),
+creditCardDetail AS(
+SELECT MONTH(transaction_date) AS months, SUM(amount)*-1 AS totalAmt
+FROM transactions
+WHERE amount<0
+GROUP BY MONTH(transaction_date)
+),
+transactionData AS(
+SELECT MONTH(transaction_date) AS months, SUM(amount) AS totalAmt
+FROM transactions
+WHERE amount>0
+GROUP BY MONTH(transaction_date)
+),
+overallData AS(
+SELECT month_id, IFNULL(creditCardDetail.totalAmt,0) AS monthlyDebit, IFNULL(transactionData.totalAmt,0) AS montlyCredit,
+CASE WHEN creditCardDetail.totalAmt>=100 THEN 0 ELSE -5 END AS charges
+FROM months LEFT JOIN creditCardDetail ON months.month_id=creditCardDetail.months
+LEFT JOIN transactionData ON transactionData.months=months.month_id
+),
+monthlyCalc AS (
+SELECT month_id, (montlyCredit + charges - monthlyDebit) AS finalMonthlyAmt
+FROM overallData
+)
+
+SELECT SUM(finalMonthlyAmt) AS finalBalance FROM monthlyCalc
+
+Actual Solution:-
+with cte as (
+select month(transaction_date)  as tran_month ,amount
+ from transactions
+)
+,cte2 as (
+select tran_month
+, sum(amount) as net_amount , sum(case when amount<0 then -1*amount else 0 end) as credit_card_amount
+, sum(case when amount<0 then 1 else 0 end) as credit_card_transact_cnt
+from cte 
+group by tran_month
+)
+select sum(net_amount) - sum(case when credit_card_amount >=100 and credit_card_transact_cnt >=2 then 0 else 5 end)
+- 5*(12-(select count(distinct tran_month) from cte)) as final_balance
+from cte2;
