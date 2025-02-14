@@ -1,0 +1,46 @@
+DIFFICULTY:-Hard
+COMPANY:-Zomato
+
+Question:-
+Suppose you are a data analyst working for Zomato (a online food delivery company) . Zomato is interested in analysing customer food ordering behavior 
+and wants to identify customers who have exhibited inconsistent patterns over time.
+
+Your task is to write an SQL query to identify customers who have placed orders on both weekdays and weekends, but with a significant difference 
+in the average order amount between weekdays and weekends. Specifically, you need to identify customers who have a minimum of 3 orders placed both on weekdays and weekends each, and where the average order amount on weekends is at least 20% higher than the average order amount on weekdays.
+
+Your query should return the customer id, the average order amount on weekends, the average order amount on weekdays, and the percentage 
+difference in average order amount between weekends and weekdays for each customer meeting the criteria.
+
+Table: orders
++--------------+---------------+
+| COLUMN_NAME  | DATA_TYPE     |
++--------------+---------------+
+| order_id     | int           |
+| customer_id  | int           |
+| order_amount | decimal(10,2) |
+| order_date   | date          |
++--------------+---------------+
+
+My Solution:-
+WITH initialData AS (
+SELECT *,CASE WHEN WEEKDAY(order_date) IN ('5', '6') THEN 'Weekend' ELSE 'Weekday' END AS dayType
+FROM orders
+),
+overallOrder AS(
+SELECT customer_id, dayType, COUNT(dayType) OVER(PARTITION BY customer_id, dayType) AS totalOrders,
+AVG(order_amount) OVER(PARTITION BY customer_id, dayType) AS avgOrders
+FROM initialData
+),
+weekendWeekDayOrders AS(
+SELECT customer_id,
+MAX(CASE WHEN dayType='Weekend' THEN totalOrders END) AS totalWeekEndOrders,
+MAX(CASE WHEN dayType='Weekday' THEN totalOrders END) AS totalWeekdayOrders,
+MAX(CASE WHEN dayType='Weekend' THEN avgOrders END) AS weekendAvgAmt,
+MAX(CASE WHEN dayType='Weekday' THEN avgOrders END) AS weekdayAvgAmt
+FROM overallOrder
+GROUP BY customer_id
+ )
+ SELECT customer_id, weekendAvgAmt, weekdayAvgAmt,
+ (weekendAvgAmt-weekdayAvgAmt)*100.0 / weekdayAvgAmt AS percentDiff
+ FROM weekendWeekDayOrders
+ WHERE weekendAvgAmt>1.2*weekdayAvgAmt AND totalWeekEndOrders>=3 AND totalWeekdayOrders>=3
