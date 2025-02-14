@@ -1,0 +1,53 @@
+DIFFICULTY:-Hard
+COMPANY:-Swiggy
+
+Question:-
+You are given three tables: students, friends and packages. Friends table has student id and friend id(only best friend). A student can have more than one best friends. 
+Write a query to output the names of those students whose ALL friends got offered a higher salary than them. Display those students name and difference 
+between their salary and average of their friends salaries.
+
+Table: students 
++-------------+----------+
+| COLUMN_NAME | DATA_TYPE|
++-------------+----------+
+| id          | int      |
+| name        | varchar  |
++-------------+----------+
+Table: friends 
++-------------+----------+
+| COLUMN_NAME | DATA_TYPE|
++-------------+----------+
+| id          | int      |
+| friend_id   | int      |
++-------------+----------+
+Table: packages 
++-------------+----------+
+| COLUMN_NAME | DATA_TYPE|
++-------------+----------+
+| id          | int      |
+| salary      | int      |
++-------------+----------+
+
+My Solution:-
+WITH initialData AS(
+SELECT friends.id AS studentId, friends.friend_id, studentPackage.salary AS studentSalary, friendsPackage.salary AS friendsSalary,
+COUNT(*) OVER(PARTITION BY friends.id) AS totalFriends,
+CASE WHEN studentPackage.salary<friendsPackage.salary THEN 1 ELSE 0 END AS flag
+from friends INNER JOIN packages as studentPackage ON friends.id=studentPackage.id
+INNER JOIN packages AS friendsPackage ON friends.friend_id=friendsPackage.id
+ORDER BY friends.id
+)
+SELECT students.name, (studentSalary-AVG(friendsSalary)) AS salaryDiff
+FROM initialData INNER JOIN students ON initialData.studentId=students.id
+GROUP BY students.name, totalFriends,studentSalary
+HAVING totalFriends=SUM(flag)
+
+Actual Solution:-
+select s.name, sp.salary-avg(fp.salary) as salary_diff
+from students s
+inner join friends f on s.id=f.id
+inner join packages sp on s.id=sp.id 
+inner join packages fp on f.friend_id=fp.id 
+group by s.name , sp.salary 
+having sp.salary < min(fp.salary) 
+order by s.name;
