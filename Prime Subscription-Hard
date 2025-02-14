@@ -1,0 +1,70 @@
+DIFFICULTY:-Hard
+COMPANY:-Amazon
+
+Question:-
+Amazon, the world's largest online retailer, offers various services to its customers, including Amazon Prime membership, 
+Video streaming, Amazon Music, Amazon Pay, and more. The company is interested in analyzing which of its services are most effective at converting 
+regular customers into Amazon Prime members.
+You are given a table of events which consists services accessed by each users along with service access date. This table also contains the event when customer 
+bought the prime membership (type='prime').
+
+Write an SQL to get date when each customer became prime member, last service used and last service access date (just before becoming prime member). 
+If a customer never became prime member, then populate only the last service used and last service access date by the customer, display the output 
+in ascending order of last service access date.
+
+Table: users
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| name        | varchar(15) |
+| user_id     | int         |
++-------------+-------------+
+Table : events
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| user_id     | int         |
+| type        | varchar(15) |
+| access_date | date        |
++-------------+-------------+
+
+My Solution:-
+WITH combineData AS(
+SELECT user_id, type, access_date,
+LAG(type) OVER(PARTITION BY user_id ORDER BY access_date) AS lastType,
+LAG(access_date) OVER(PARTITION BY user_id ORDER BY access_date) AS lastAccessDate
+FROM events
+),
+nonPrimeData AS(
+SELECT * 
+FROM combineData WHERE user_id NOT IN (SELECT DISTINCT user_id FROM events WHERE type='Prime')
+),
+nonPrimeFilter AS(
+SELECT *, ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY access_date DESC) AS ranked FROM nonPrimeData
+),
+finalData AS(
+SELECT user_id, access_date, lastType, lastAccessDate FROM combineData WHERE type='Prime'
+UNION ALL
+SELECT user_id, NULL, type, access_date 
+FROM nonPrimeFilter 
+WHERE ranked = 1
+)
+
+SELECT users.name, access_date, lastType, lastAccessDate
+FROM finalData 
+INNER JOIN users ON finalData.user_id = users.user_id;
+
+Actual Solution:-
+WITH cte as (
+select *
+, lag(type,1) over(partition by user_id order by access_date) as prev_type
+, lag(access_date,1) over(partition by user_id order by access_date) as prev_access_date
+,row_number() over(partition by user_id order by access_date desc) as rn
+from events
+)
+select u.name as user_name 
+, cte.access_date as prime_member_date , coalesce(cte.prev_type,c.type) as last_access_service, coalesce(cte.prev_access_date,c.access_date) as last_access_service_date
+from users u
+left join cte on u.user_id=cte.user_id and cte.type='Prime'
+left join cte c on c.user_id=u.user_id and c.rn=1
+ORDER BY last_access_service_date;
