@@ -1,0 +1,59 @@
+DIFFICULTY:-Hard
+COMPANY:-Tredence
+
+Question:-
+You are given a table user events that tracks user activity with the following schema:
+
+Table: events
++-------------+----------+
+| COLUMN_NAME | DATA_TYPE|
++-------------+----------+
+| user_id     | int      |    
+| event_type  | varchar  |
+| event_time  | timestamp|
++-------------+----------+
+Task:
+
+1. Identify user sessions. A session is defined as a sequence of activities by a user where the time difference between consecutive events is 
+less than or equal to 30 minutes. If the time between two events exceeds 30 minutes, it's considered the start of a new session.
+
+2. For each session, calculate the following metrics:
+
+session_id : a unique identifier for each session.
+
+session_start_time : the timestamp of the first event in the session.
+
+session_end_time : the timestamp of the last event in the session.
+
+session_duration : the difference between session_end_time and session_start_time.
+
+event_count : the number of events in the session.
+
+My Solution:-
+WITH initialData AS (
+  SELECT userid, event_type, event_time,
+ LAG(event_time, 1, event_time) OVER(PARTITION BY userid ORDER BY event_time) AS previouTime,
+TIMESTAMPDIFF(MINUTE, LAG(event_time, 1, event_time) OVER(PARTITION BY userid ORDER BY event_time), event_time) AS timeDiff
+  FROM events
+),
+flaging AS (
+  SELECT userid, event_type, event_time, previouTime,
+ CASE WHEN timeDiff <= 30 THEN 0 ELSE 1 END AS flag
+  FROM initialData
+),
+groupings AS(
+SELECT userid, event_type, event_time, previouTime,
+SUM(flag) OVER(PARTITION BY userid ORDER BY event_time) AS groupId
+FROM flaging
+)
+SELECT 
+  userid, 
+  ROW_NUMBER() OVER(PARTITION BY userid ORDER BY MIN(event_time)) AS sessionId, 
+  MIN(event_time) AS sessionStart, 
+  MAX(event_time) AS sessionEnd, 
+  TIMESTAMPDIFF(MINUTE, MIN(event_time), MAX(event_time)) AS sessionDuration, 
+  COUNT(*) AS totalCount
+FROM groupings
+GROUP BY 
+  userid, 
+  groupId
