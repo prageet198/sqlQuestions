@@ -1,0 +1,13 @@
+DIFFICULTY:-Hard
+COMPANY:-Amazon
+Question:-
+Write an SQL to get the date of the last Sunday as per today's date. If you are solving the problem on Sunday 
+then it should still return the date of last Sunday (not current date).
+
+Note : Dates are displayed as per UTC time zone.
+
+My Solution:-
+SELECT CURRENT_DATE - INTERVAL (WEEKDAY(CURRENT_DATE) + 1) DAY AS last_sunday;
+
+Actual Solution:-
+SELECT DATE_SUB(DATE(now()), INTERVAL case when DAYOFWEEK(now())=1 then 7 else DAYOFWEEK(now())-1 end DAY) as last_sunday;
