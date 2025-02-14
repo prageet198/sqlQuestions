@@ -1,0 +1,41 @@
+DIFFICULTY:-Hard
+COMPANY:-Walmart
+
+Question:-
+You are tasked with analysing the sales data for products during the month of January 2024. Your goal is to calculate the rolling sum of sales 
+for each product and each day of Jan 2024, considering the sales for the current day and the two previous days. Note that for some days, 
+there might not be any sales for certain products, and you need to consider these days as having sales of 0.
+
+You can make use of the calendar table which has the all the dates for Jan-2024.
+
+Tables: orders
++-------------+------------+
+| COLUMN_NAME | DATA_TYPE  |
++-------------+------------+
+| amount      | int        |
+| order_date  | date       |
+| order_id    | int        |
+| product_id  | varchar(5) |
++-------------+------------+
+Tables: calendar_dim
++-------------+-----------+
+| COLUMN_NAME | DATA_TYPE |
++-------------+-----------+
+| cal_date    | date      |
++-------------+-----------+
+
+My Solution:-
+WITH aggregateProducts AS(
+SELECT order_date, product_id, SUM(amount) AS totalSales
+FROM orders
+GROUP BY  order_date, product_id
+),
+allProductDates AS(
+SELECT DISTINCT product_id, cal_date AS orderDate
+FROM aggregateProducts CROSS JOIN calendar_dim
+)
+SELECT apd.product_id, apd.orderDate, COALESCE(ap.totalSales,0) AS sales,
+SUM(COALESCE(ap.totalSales,0)) OVER(PARTITION BY apd.product_id ORDER BY apd.orderDate ROWS BETWEEN 2 preceding AND CURRENT ROW) AS rollingSum
+FROM allProductDates AS apd LEFT JOIN aggregateProducts AS ap
+ON apd.product_id=ap.product_id AND apd.orderDate=ap.order_date
+ORDER BY apd.product_id, apd.orderDate
