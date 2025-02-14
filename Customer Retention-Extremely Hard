@@ -1,0 +1,72 @@
+DIFFICULTY:-Extremely Hard
+COMPANY:-Amazon
+
+Question:-
+Customer retention can be defined as number of customers who continue to make purchases over a certain period compared to the total number of customers. 
+Here's a step-by-step approach to calculate customer retention rate:
+
+1- Determine the number of customers who made purchases 
+in the current period (e.g., month: m )
+2- Identify the number of customers from month m who made purchases 
+in month m+1 , m+2 as well.
+Suppose you are a data analyst working for Amazon. The company is interested in measuring customer retention over the months to understand 
+how many customers continue to make purchases over time. Your task is to write an SQL to derive customer retention month over month, display 
+the output in ascending order of current year, month & future year, month.
+
+Table: orders
++-------------+-----------+
+| COLUMN_NAME | DATA_TYPE |
++-------------+-----------+
+| order_id    | int       |
+| customer_id | int       |
+| order_date  | date      |
++-------------+-----------+
+
+My Solution:-
+WITH yearlyMonthly AS(
+SELECT customer_id,YEAR(order_date) AS orderYear,MONTH(order_date) AS orderMonth
+FROM orders
+GROUP BY customer_id,YEAR(order_date),MONTH(order_date)
+),
+retentionData AS(
+SELECT m1.customer_id, m1.orderYear AS currentYear,
+m1.orderMonth AS currentMonth, m2.orderYear AS futureYear, m2.orderMonth AS futureMonth
+FROM yearlyMonthly AS m1 INNER JOIN yearlyMonthly AS m2
+ON m1.customer_id=m2.customer_id AND ((m2.orderYear=m1.orderYear AND m2.orderMonth>m1.orderMonth) OR (m2.orderYear>m1.orderYear))
+),
+totalRetentionCustomers AS(
+  SELECT currentYear, currentMonth, futureYear,futureMonth, COUNT(DISTINCT customer_id) AS totalretained
+ FROM retentionData
+  GROUP BY currentYear, currentMonth, futureYear,futureMonth
+),
+totalCustomers AS (
+  SELECT orderYear AS currrentYears, orderMonth AS currentMonths,
+  COUNT(DISTINCT customer_id) AS totalCustomers
+  FROM yearlyMonthly
+  GROUP BY orderYear, orderMonth
+)
+SELECT currentYear, currentMonth, futureYear,futureMonth, totalCustomers, totalretained
+FROM totalRetentionCustomers INNER JOIN totalCustomers
+ON totalRetentionCustomers.currentYear=totalCustomers.currrentYears AND totalRetentionCustomers.currentMonth=totalCustomers.currentMonths
+ORDER BY currentYear, currentMonth, futureYear,futureMonth
+
+Actual Solution:-
+WITH cte AS (
+    SELECT DISTINCT 
+        YEAR(order_date) AS year, 
+        MONTH(order_date) AS month, 
+        customer_id 
+    FROM orders
+)
+SELECT 
+    cm.year AS current_year,
+    cm.month AS current_month,
+    fm.year AS future_year,
+    fm.month AS future_month,
+    COUNT(DISTINCT cm.customer_id) AS total_customers,
+    COUNT(DISTINCT CASE WHEN fm.customer_id = cm.customer_id THEN fm.customer_id END) AS retained_customers
+FROM cte cm
+INNER JOIN cte fm 
+    ON (fm.year > cm.year OR (fm.year = cm.year AND fm.month > cm.month))
+GROUP BY cm.year, cm.month, fm.year, fm.month
+ORDER BY cm.year, cm.month, fm.year, fm.month;
