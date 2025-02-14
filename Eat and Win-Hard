@@ -1,0 +1,75 @@
+DIFFICULTY:-Hard
+COMPANY:-Google
+
+Question:-
+A pizza eating competition is organized. All the participants are organized into different groups. In a contest , A participant who eat the most pieces 
+of pizza is the winner and recieves their original bet plus 30% of all losing participants bets. In case of a tie all winning participants will 
+get equal share (of 30%) divided among them .Return the winning participants' names for each group and amount of their payout(round to 2 decimal places) . 
+ordered ascending by group_id , participant_name.
+
+ 
+
+Tables: Competition
++------------------+-------------+
+| COLUMN_NAME      | DATA_TYPE   |
++------------------+-------------+
+| group_id         | int         |
+| participant_name | varchar(10) |
+| slice_count      | int         |
+| bet              | int         |
++------------------+-------------+
+
+My Solution:-
+WITH winnerCount AS(
+SELECT group_id, MAX(slice_count) AS winnerCnt
+FROM competition
+GROUP BY group_id
+),
+initialData AS(
+SELECT competition.group_id, competition.participant_name, slice_count, bet, winnerCnt
+FROM competition INNER JOIN winnerCount ON competition.group_id=winnerCount.group_id
+),
+flagCte AS(
+SELECT * , CASE WHEN slice_count=winnerCnt THEN 1 ELSE 0 END AS winnerFlg
+FROM initialData
+),
+totalLoerBet AS(
+SELECT group_id, SUM(bet) AS looserBet
+FROM flagCte WHERE winnerFlg='0' GROUP BY group_id
+),
+totalWinnerBet AS(
+SELECT * ,COUNT(*) OVER(PARTITION BY group_id) AS totalMembers
+FROM flagCte WHERE winnerFlg='1'
+),
+semiFinalData AS(
+SELECT totalWinnerBet.group_id, totalWinnerBet.participant_name, totalWinnerBet.bet, totalWinnerBet.totalMembers, totalLoerBet.looserBet
+FROM totalWinnerBet INNER JOIN totalLoerBet ON totalWinnerBet.group_id=totalLoerBet.group_id
+ ),
+ stageData AS(
+ SELECT *, ROUND((looserBet*0.30)/totalMembers,2) AS finalAmt
+ FROM semiFinalData
+ )
+ 
+ SELECT group_id, participant_name, (bet+finalAmt) AS totalPayout
+ FROM stageData
+
+Actual Solution:-
+with cte as (
+select *
+, rank() over(partition by group_id order by slice_count desc) as rn
+from Competition
+)
+, cte2 as 
+(
+select group_id
+,sum(case when rn=1 then 1 else 0 end) as no_of_winners
+,sum(case when rn>1 then bet else 0 end)*0.3 as losers_bet 
+from cte 
+group by group_id
+)
+select cte.group_id,cte.participant_name
+,round(cte.bet+ (cte2.losers_bet)/cte2.no_of_winners,2) as total_payout 
+from cte
+inner join cte2 on cte.group_id=cte2.group_id
+where cte.rn=1
+order by cte.group_id,cte.participant_name;
