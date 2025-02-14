@@ -1,0 +1,37 @@
+DIFFICULTY:-Hard
+COMPANY:-Google
+
+Question:-
+The HR department needs to extract the first name, middle name and last name of each employee from the full name column. 
+However, the full name column contains names in the format "Lastname,Firstname Middlename". 
+Please consider that an employee name can be in one of the 3 following formats.
+1- "Lastname,Firstname Middlename"
+2- "Lastname,Firstname"
+3- "Firstname"
+
+Table : employee 
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| employeeid  | int         |
+| fullname    | varchar(20) |
++-------------+-------------+
+
+My Solution:-
+with cte as (
+select *,instr(fullname,',') as comma_position 
+,instr(fullname,' ') as space_position
+from employee
+)
+select fullname
+, case when comma_position=0 then fullname
+when space_position>0 then substr(fullname,comma_position+1,space_position-comma_position-1)
+else substr(fullname,comma_position+1,length(fullname)-comma_position)
+end as first_name
+,case when space_position=0 then null
+else substr(fullname,space_position+1,length(fullname)-space_position)
+end as middle_name
+,case when comma_position=0 then null
+else substr(fullname,1,comma_position-1)
+end as last_name
+from cte;
