@@ -1,0 +1,68 @@
+DIFFICULTY:Hard
+COMPANY:-LinkedIn
+
+Question:-
+LinkedIn stores information of post likes in below format. Every time a user likes a post there will be an entry made in post likes table.
+
+Table : post_likes 
++-------------+-----------+
+| COLUMN_NAME | DATA_TYPE |
++-------------+-----------+
+| post_id     | int       |
+| user_id     | int       |
++-------------+-----------+
+LinkedIn also stores the information when someone follows another user in below format.
+
+Table : user_follows
++-----------------+-----------+
+| COLUMN_NAME     | DATA_TYPE |
++-----------------+-----------+
+| follows_user_id | int       |
+| user_id         | int       |
++-----------------+-----------+
+The marketing team wants to send one recommendation post to each user . Write an SQL to find out that one post id for each user that is liked by 
+the most number of users that they follow. Display user id, post id and no of likes.
+
+Please note that team do not want to recommend a post which is already liked by the user. If for any user,  2 or more posts are liked 
+by equal number of users that they follow then select the smallest post id, display the output in ascending order of user id.
+
+My Solution:-
+WITH followersLikedPost AS (
+    SELECT 
+        user_follows.user_id, 
+        post_likes.post_id, 
+        COUNT(post_likes.user_id) AS totalLikes
+    FROM user_follows
+    INNER JOIN post_likes
+        ON user_follows.follows_user_id = post_likes.user_id
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM post_likes pl
+        WHERE pl.user_id = user_follows.user_id
+          AND pl.post_id = post_likes.post_id
+    )
+    GROUP BY user_follows.user_id, post_likes.post_id
+),
+combineData AS(
+SELECT *,
+ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY totalLikes DESC, post_id) AS ranked
+FROM followersLikedPost)
+SELECT user_id, post_id,totalLikes FROM combineData WHERE ranked=1
+ORDER BY user_id
+
+Actual Solution:-
+with cte as (
+select f.user_id,p.post_id,count(*) as no_of_likes
+from user_follows f 
+inner join post_likes p on f.follows_user_id = p.user_id 
+group by f.user_id,p.post_id
+)
+select user_id,post_id,no_of_likes from (
+select cte.* 
+,row_number() over(partition by cte.user_id order by no_of_likes desc, cte.post_id ) as rn
+from cte
+left join post_likes p on p.user_id=cte.user_id and p.post_id=cte.post_id
+where p.post_id is null
+) s
+where rn=1
+ORDER BY user_id;
