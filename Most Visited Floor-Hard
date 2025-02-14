@@ -1,0 +1,67 @@
+DIFFICULTY:-Hard
+COMPANY:-Intuit
+
+Question:-
+You are a facilities manager at a corporate office building, responsible for tracking employee visits, floor preferences, and resource usage within the premises. 
+The office building has multiple floors, each equipped with various resources such as desks, computers, monitors, and other office supplies. 
+You have a database table “entries” that stores information about employee visits to the office building. Each record in the table represents a visit 
+by an employee and includes details such as their name, the floor they visited, and the resources they used during their visit.
+Write an SQL query to retrieve the total visits, most visited floor, and resources used by each employee, display the output in ascending order of employee name.
+
+Table : entries
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| emp_name    | varchar(10) |
+| address     | varchar(10) |
+| floor       | int         |
+| resources   | varchar(10) |
++-------------+-------------+
+
+My Solution:-
+WITH empTotalFloorVisit AS(
+SELECT emp_name, floor, COUNT(*) AS totalFloorVisits
+from entries
+GROUP BY emp_name, floor
+),
+filterFloorVist AS(
+SELECt emp_name, floor,totalFloorVisits,
+ROW_NUMBER() OVER(PARTITION BY emp_name ORDER BY totalFloorVisits DESC) AS ranked
+FROM empTotalFloorVisit
+),
+finalFllorVisit AS(
+SELECT emp_name, floor FROM filterFloorVist WHERE ranked='1'
+),
+totalFloorVisits AS(
+SELECT emp_name, COUNT(*) AS totalVisits
+FROM entries
+GROUP BY emp_name
+),
+totalResources AS(
+SELECT emp_name, GROUP_CONCAT(DISTINCT resources) AS resourcesUsed
+FROM entries
+GROUP BY emp_name
+)
+
+SELECT totalResources.emp_name, totalFloorVisits.totalVisits, finalFllorVisit.floor,totalResources.resourcesUsed
+FROM totalResources INNER JOIN totalFloorVisits
+ON totalResources.emp_name=totalFloorVisits.emp_name
+INNER JOIN finalFllorVisit ON finalFllorVisit.emp_name=totalResources.emp_name
+
+Actual Solution:-
+with cte_resources as (
+select emp_name ,count(*) as total_visits ,group_concat(distinct resources) as resources_used
+from entries
+group by emp_name
+),
+floor_visits as (
+select emp_name,floor,count(*) as no_of_floor_visits
+,row_number() over(partition by emp_name order by count(*) desc) as rn
+from entries
+group by emp_name,floor
+)
+select fv.emp_name,r.total_visits,fv.floor as most_visited_floor,r.resources_used
+from floor_visits fv 
+inner join cte_resources r on fv.emp_name=r.emp_name
+where rn=1
+ORDER BY emp_name ;
