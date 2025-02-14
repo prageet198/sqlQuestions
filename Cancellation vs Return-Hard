@@ -1,0 +1,45 @@
+DIFFICULTY:-Hard
+COMPANY:-Amazon
+
+Question:-
+nformation on order date, delivery date, and cancel date. The task is to calculate both the cancellation rate and the return rate for each month based on the order date.
+
+Definitions:
+
+An order is considered cancelled if it is cancelled before delivery (i.e., cancel_date is not null, and delivery_date is null). If an order is cancelled, 
+no delivery will take place.
+An order is considered a return if it is cancelled after it has already been delivered (i.e., cancel_date is not null, and cancel_date > delivery_date).
+
+Metrics to Calculate:
+Cancel Rate = (Number of orders cancelled / Number of orders placed but not returned) * 100
+Return Rate = (Number of orders returned / Number of orders placed but not cancelled) * 100
+
+Write an SQL query to calculate the cancellation rate and return rate for each month (based on the order_date).Round the rates to 2 decimal places. 
+Sort the output by year and month in increasing order.
+ 
+
+Table: orders 
++---------------+-----------+
+| COLUMN_NAME   | DATA_TYPE |
++---------------+-----------+
+| order_id      | int       |
+| order_date    | date      |
+| customer_id   | int       |
+| delivery_date | date      |
+| cancel_date   | date      |
++---------------+-----------+
+My Solution:-
+WITH overallData AS(
+SELECT order_id,
+YEAR(order_date) AS orderYear,
+MONTH(order_date) AS orderMonth,
+CASE WHEN cancel_date IS NOT NULL AND delivery_date IS NULL THEN 1 ELSE 0 END AS isCancelled,
+CASE WHEN cancel_date IS NOT NULL AND cancel_date>delivery_date THEN 1 ELSE 0 END isReturned
+FROM orders
+)
+SELECT orderYear,orderMonth,
+ROUND(SUM(isCancelled)*100.0/(COUNT(*)-SUM(isReturned)),2) AS cancellationRate,
+ROUND(SUM(isReturned)*100.0/(COUNT(*)-SUM(isCancelled)),2) AS returnRate
+FROM overallData
+GROUP BY orderYear,orderMonth
+
