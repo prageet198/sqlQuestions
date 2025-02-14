@@ -1,0 +1,78 @@
+DIFFICULTY:-Hard
+COMPANY:-Tiger Analysis
+
+Question:-
+You are tasked with managing project budgets at a company. Each project has a fixed budget, and multiple employees work on these projects. 
+The company's payroll is based on annual salaries, and each employee works for a specific duration on a project.
+Over budget on a project is defined when the salaries (allocated on per day basis as per project duration) exceed the budget of the project. For example, 
+if Ankit and Rohit both combined income make 200K and work on a project of a budget of 50K that takes half a year, 
+then the project is over budget given 0.5 * 200K = 100K > 50K.
+
+ 
+Write a query to forecast the budget for all projects and return a label of "overbudget" 
+if it is over budget and "within budget" otherwise. Order the result by project title.
+ Note: Assume that employees only work on one project at a time.
+Table: employees 
++-------------+----------+
+| COLUMN_NAME | DATA_TYPE|
++-------------+----------+
+| id          | int      |
+| name        | varchar  |
+| salary      | int      |
++-------------+----------+
+Table: projects 
++-------------+----------+
+| COLUMN_NAME | DATA_TYPE|
++-------------+----------+
+| id          | int      |
+| title       | varchar  |
+| start_date  | date     |
+| end_date    | date     |
+| budget      | int      |
++-------------+----------+
+Table: project_employees 
++-------------+----------+
+| COLUMN_NAME | DATA_TYPE|
++-------------+----------+
+| project_id  | int      |
+| employee_id | int      |
++-------------+----------+
+
+My Solution:-
+WITH initialData AS (
+SELECT projects.id, projects.title, projects.budget, SUM(employees.salary) AS totalEmpSal,DATEDIFF(end_date, start_date) AS totalDays
+from projects INNER JOIN project_employees ON projects.id=project_employees.project_id
+INNER JOIN employees ON employees.id=project_employees.employee_id
+GROUP BY projects.id, projects.title, projects.budget, totalDays
+ORDER BY projects.title
+)
+SELECT title, budget,
+CASE WHEN ((totalEmpSal/365)*totalDays)<=budget THEN 'within budget' ELSE 'overbudget' END AS flag
+FROM initialData
+
+Actual Solution:-
+WITH Project_Salary_Cost AS (
+    SELECT 
+        p.title AS project_title,
+        p.budget,
+        SUM(e.salary * (DATEDIFF(p.end_date, p.start_date) / 365.0)) AS total_salary_cost
+    FROM 
+        Projects p
+    JOIN 
+        Project_Employees pe ON p.id = pe.project_id
+    JOIN 
+        Employees e ON e.id = pe.employee_id
+    GROUP BY 
+        p.id, p.title, p.budget
+)
+SELECT 
+    project_title AS title,
+    budget,
+    CASE 
+        WHEN total_salary_cost > budget THEN 'overbudget'
+        ELSE 'within budget'
+    END AS label
+FROM 
+    Project_Salary_Cost
+ORDER BY 
+    project_title;
