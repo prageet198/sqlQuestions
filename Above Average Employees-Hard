@@ -1,0 +1,61 @@
+DIFFICULTY:-Hard
+COMPANY:-Amazon
+
+Question:-
+You are working as a data analyst at a tech company called "TechGuru Inc." that specializes in software development and data science solutions. 
+The HR department has tasked you with analyzing the salaries of employees. Your goal is to identify employees who earn above the average salary 
+for their respective job title but are not among the top 3 earners within their job title. Consider the sum of base_pay, overtime_pay and other_pay as total salary. 
+
+In case multiple employees have same total salary then ranked them based on higher base pay. Sort the output by total salary in descending order.
+
+Table: employee 
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| emp_id      | int         |
+| emp_name    | varchar(20) |
+| job_title   | varchar(20) |
++-------------+-------------+
+Table: salary 
++--------------+-----------+
+| COLUMN_NAME  | DATA_TYPE |
++--------------+-----------+
+| emp_id       | int       |
+| base_pay     | int       |
+| other_pay    | int       |
+| overtime_pay | int       |
++--------------+-----------+
+
+My Solution:-
+WITH salaryDetail AS(
+SELECT *, (base_pay + overtime_pay + other_pay) AS totalPay
+FROM salary
+),
+empSalaryDetail AS(
+SELECT employee.emp_name, employee.job_title,
+salaryDetail.base_pay,salaryDetail.totalPay
+FROM employee INNER JOIN salaryDetail ON employee.emp_id=salaryDetail.emp_id
+),
+titleAvgSal AS(
+SELECT *,
+AVG(totalPay) OVER(PARTITION BY job_title) AS titleAvgSal,
+ROW_NUMBER() OVER(PARTITION BY job_title ORDER BY totalPay DESC) AS ranked
+FROM empSalaryDetail
+)
+SELECT emp_name, job_title, totalPay, base_pay, titleAvgSal
+FROM titleAvgSal
+WHERE totalPay>titleAvgSal AND ranked>3
+ORDER BY totalPay DESC, base_pay DESC
+
+Actual Solution:-
+with cte as (
+select e.emp_name,e.job_title,(base_pay+overtime_pay+other_pay) as total_pay,base_pay
+,avg(base_pay+overtime_pay+other_pay) over(partition by e.job_title) as title_avg_pay
+, row_number() over(partition by e.job_title order by (base_pay+overtime_pay+other_pay) desc,base_pay desc ) as rn
+from employee e 
+inner join salary s on e.emp_id=s.emp_id
+)
+select emp_name,job_title,total_pay,base_pay,title_avg_pay
+from cte
+where total_pay>title_avg_pay and rn>3
+order by  total_pay desc;
