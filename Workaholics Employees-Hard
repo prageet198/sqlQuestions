@@ -1,0 +1,58 @@
+DIFFICULTY:-Hard
+COMPANY:-Meta
+
+Quetsion:-
+Write a query to find workaholics employees.  Workaholics employees are those who satisfy at least one of the given criterions:
+
+1- Worked for more than 8 hours a day for at least 3 days in a week. 
+2- worked for more than 10 hours a day for at least 2 days in a week. 
+You are given the login and logout timings of all the employees for a given week. Write a SQL to find all the workaholic employees 
+along with the criterion that they are satisfying (1,2 or both), display it in the order of increasing employee id
+
+Table: employees
++-------------+-----------+
+| COLUMN_NAME | DATA_TYPE |
++-------------+-----------+
+| emp_id      | int       |
+| login       | datetime  |
+| logout      | datetime  |
++-------------+-----------+
+
+My Solution:-
+WITH empData AS (
+select emp_id,
+TIMESTAMPDIFF(SECOND,login,logout)/3600.0 AS total_hours
+from employees
+  ),
+  filterData AS(
+SELECT emp_id,
+SUM(CASE WHEN total_hours>8 THEN 1 ELSE 0 END) AS criteria1,
+SUM(CASE WHEN total_hours>10 THEN 1 ELSE 0 END) AS citeria2
+FROM empData
+GROUP BY emp_id
+    )
+ SELECT emp_id,
+ CASE WHEN criteria1>=3 AND citeria2<2 THEN 1
+ 	  WHEN criteria1<3 AND citeria2>=2 THEN 2
+      ELSE 'both' END AS criterian 
+ FROM filterData
+ WHERE criteria1>=3 OR citeria2>=2
+
+Actual Solution:-
+with logged_hours as (
+select *,TIMESTAMPDIFF(second, login, logout)/3600.0,case when TIMESTAMPDIFF(second, login, logout) / 3600.0  > 10 then '10+'
+when TIMESTAMPDIFF(second, login, logout) / 3600.0  > 8 then '8+'
+else '8-' end as time_window
+from employees)
+ , time_window as (
+ select emp_id , count(*) as days_8
+, sum(case when time_window='10+' then 1 else 0 end ) as days_10
+ from logged_hours
+where time_window in ('10+','8+')
+ group by emp_id)
+ select emp_id, case when days_8 >=3 and days_10>=2 then 'both'
+ when days_8 >=3 then '1'
+ else '2' end as criterian
+ from time_window
+  where days_8>=3 or days_10>=2 
+ORDER BY emp_id ASC;
