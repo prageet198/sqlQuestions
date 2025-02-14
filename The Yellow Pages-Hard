@@ -1,0 +1,64 @@
+DIFFICULTY:-HArd
+COMPANY:-HTC GLOBAL
+
+Question:-
+To enhance the functionality of "The Yellow Pages" website, create a SQL query to generate a report of companies, including their phone numbers and ratings. 
+The query must account for the following:
+Columns in the output:
+name: The company name as per below rules:
+    For promoted companies:
+        Format: [PROMOTED] <company_name>.
+    For non-promoted companies:
+        Format: <company_name>.
+phone: The company phone number.
+
+rating: The overall star rating of the company as per rules below:
+    Promoted companies : should always have NULL as their rating.
+    For non-promoted companies:
+        Format: <#_stars> (<average_rating>, based on <total_reviews> reviews), where:
+        <#_stars>: Rounded down average rating to the nearest whole number.
+        <average_rating>: Exact average rating rounded to 1 decimal place.
+        <total_reviews>: Total number of reviews across all categories for the company.
+
+Rules: Non-promoted companies should only be included if their average rating is 1 star or higher.
+
+Results should be sorted:
+By promotion status (promoted first).
+In descending order of the average rating (before rounding).
+By the total number of reviews (descending).
+
+Table: companies
++------------+----------+
+| COLUMN_NAME| DATA_TYPE|
++------------+----------+
+| id         | int      |
+| name       | VARCHAR  | 
+| phone      | VARCHAR  | 
+| is_promoted| int      | 
++------------+----------+
+Table: categories
++------------+----------+
+| COLUMN_NAME| DATA_TYPE|
++------------+----------+
+| company_id | int      |
+| name       | VARCHAR  | 
+| rating     | decimal  | 
++------------+----------+
+My Solution:-
+WITH initialData AS(
+SELECT companies.name, phone, COUNT(*) AS totalRating, AVG(rating) AS actualAvgRating, ROUND(AVG(rating),1) AS avgRating, FLOOR(AVG(rating)) AS startsRating, is_promoted
+FROM categories INNER JOIN companies ON categories.company_id=companies.id
+GROUP BY name, is_promoted,phone
+),
+summary AS(
+SELECT *,
+CASE WHEN is_promoted='1' THEN CONCAT('[PROMOTED]', ' ', name)  ELSE name END AS companyName,
+CASE WHEN is_promoted='0' AND avgRating<1 THEN '0' ELSE '1' END AS isIncluded,
+CASE WHEN is_promoted='1' THEN NULL ELSE
+CONCAT(REPEAT('*', startsRating),' ','(',avgRating,',',' ','based on ',totalRating,' ','reviews',')') END AS finalRating
+FROM initialData
+ORDER BY is_promoted DESC, actualAvgRating DESC, totalRating DESC
+)
+SELECT companyName, phone, finalRating
+FROM summary
+WHERE isIncluded='1'
