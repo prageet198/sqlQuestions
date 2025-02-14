@@ -1,0 +1,96 @@
+DIFFICULTY:-Hard
+COMPANY:-Flipkart
+
+Question:-
+You're working for a retail company that sells various products. The company wants to identify seasonal trends in sales for its top-selling products across different regions. 
+They are particularly interested in understanding the variation in sales volume across seasons for these products.
+For each top-selling product in each region, calculate the total quantity sold for each season (spring, summer, autumn, winter) in 2023, display the output 
+in ascending order of region name, product name & season name.
+
+Table: products
++--------------+-------------+
+| COLUMN_NAME  | DATA_TYPE   |
++--------------+-------------+
+| product_id   | int         |
+| product_name | varchar(10) |
++--------------+-------------+
+Table: sales
++---------------+-------------+
+| COLUMN_NAME   | DATA_TYPE   |
++---------------+-------------+
+| sale_id       | int         |
+| product_id    | int         |
+| region_name   | varchar(20) |
+| sale_date     | date        |
+| quantity_sold | int         |
++---------------+-------------+
+Table: seasons
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| start_date  | date        |
+| end_date    | date        |
+| season_name | varchar(10) |
++-------------+-------------+
+
+My Solution:-
+WITH overallSellingProducts AS(
+  SELECT region_name, product_id,
+SUM(quantity_sold ) AS totalSales
+FROM sales
+GROUP BY region_name, product_id
+),
+topSellingProducts AS(
+SELECT region_name, product_id,
+ROW_NUMBER() OVER(PARTITION BY region_name ORDER BY totalSales DESC) AS ranked
+FROM overallSellingProducts
+),
+regionProductData AS(
+SELECT sales.region_name, sales.product_id, sales.sale_date, sales.quantity_sold
+FROM topSellingProducts INNER JOIN sales
+ON topSellingProducts.region_name=sales.region_name AND topSellingProducts.product_id=sales.product_id AND ranked='1'
+),
+regionSeasonData AS(
+SELECT region_name, product_id, quantity_sold, season_name
+FROM regionProductData INNER JOIN seasons
+ON sale_date BETWEEN seasons.start_date AND seasons.end_date
+)
+
+SELECT region_name,product_name, season_name, SUM(quantity_sold) AS totalQtySold
+FROM regionSeasonData INNER JOIN products ON regionSeasonData.product_id=products.product_id
+GROUP BY region_name,season_name,product_name
+ORDER BY region_name,season_name,product_name
+
+Actual Solution:-
+WITH top_selling_per_region AS (
+    SELECT
+        s.region_name,
+        p.product_name,
+        SUM(s.quantity_sold) AS total_quantity_sold,
+        ROW_NUMBER() OVER(PARTITION BY s.region_name ORDER BY SUM(s.quantity_sold) DESC) AS rn
+    FROM
+        sales s
+    JOIN
+        products p ON s.product_id = p.product_id
+    GROUP BY
+        s.region_name, p.product_name
+)
+SELECT
+    ts.region_name,
+    ts.product_name,
+    ss.season_name,
+    SUM(s.quantity_sold) AS total_quantity_sold
+FROM
+    sales s
+JOIN
+    products p ON s.product_id = p.product_id
+JOIN
+    top_selling_per_region ts ON s.region_name = ts.region_name AND p.product_name = ts.product_name
+JOIN
+    seasons ss ON s.sale_date BETWEEN ss.start_date AND ss.end_date
+WHERE
+    ts.rn = 1 -- Select only top-selling product per region
+GROUP BY
+    ts.region_name, ts.product_name, ss.season_name
+ORDER BY
+    ts.region_name, ts.product_name, ss.season_name;
