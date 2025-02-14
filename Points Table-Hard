@@ -1,0 +1,37 @@
+DIFFICULTY:-Hard
+COMPANY:-Amazon
+
+Question:-
+You are given table of cricket match played in a ICC cricket tournament with the details of winner for each match. You need to derive a points table using below rules.
+1- For each win a team gets 2 points. 
+2- For a loss team gets 0 points.
+3- In case of a draw both the team gets 1 point each.
+Display team name , matches played, # of wins , # of losses and points.  Sort output in ascending order of team name.
+
+Table: icc_world_cup 
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| team_1      | varchar(10) |
+| team_2      | varchar(10) |
+| winner      | varchar(10) |
++-------------+-------------+
+
+My Solution:-
+WITH teamDetail AS(
+SELECT team_1 AS teamName,
+CASE WHEN team_1=winner THEN 1 ELSE 0 END AS winFlag,
+CASE WHEN winner='Draw' THEN 1 ELSE 0 END AS drawFlag
+FROM icc_world_cup
+UNION ALL
+SELECT team_2 AS teamName,
+CASE WHEN team_2=winner THEN 1 ELSE 0 END AS winFlag,
+CASE WHEN winner='Draw' THEN 1 ELSE 0 END AS drawFlag
+FROM icc_world_cup
+)
+SELECT teamName, COUNT(*) AS totalMatch,
+SUM(winFlag) AS noOfWins, 
+COUNT(*)-SUM(winFlag)-SUM(drawFlag) AS noOfLoss,
+2*SUM(winFlag)+SUM(drawFlag) AS totalPoints
+FROM teamDetail
+GROUP BY teamName ORDER BY teamName
