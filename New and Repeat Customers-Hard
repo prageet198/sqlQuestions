@@ -1,0 +1,31 @@
+DIFFICULTY:-Hard
+COMPANY:-Flipkart
+
+Question:-
+Flipkart wants to build a very important business metrics where they want to track on daily basis how many new and repeat customers are purchasing products from their website. A new customer is defined when he purchased anything 
+for the first time from the website and repeat customer is someone who has done at least one purchase in the past.
+
+Display order date , new customers , repeat customers  in ascending order of repeat customers.
+
+Table: customer_orders
++--------------+-----------+
+| COLUMN_NAME  | DATA_TYPE |
++--------------+-----------+
+| order_id     | int       |
+| customer_id  | int       |
+| order_date   | date      |
+| order_amount | int       |
++--------------+-----------+
+
+My Solution:-
+WITH customerFirstOrderDate AS (
+  SELECT customer_id, MIN(order_date) AS firstOrderDate
+  FROM customer_orders
+  GROUP BY customer_id
+  )
+ SELECT customer_orders.order_date,
+ SUM(CASE WHEN customer_orders.order_date=firstOrderDate THEN 1 ELSE 0 END) AS newCustomerFlag,
+ SUM(CASE WHEN customer_orders.order_date>firstOrderDate THEN 1 ELSE 0 END) AS repeatCustomerFlag
+ FROM customer_orders INNER JOIN customerFirstOrderDate ON customer_orders.customer_id=customerFirstOrderDate.customer_id
+ GROUP BY customer_orders.order_date
+ ORDER BY customer_orders.order_date
