@@ -1,0 +1,42 @@
+DIFFICULTY:-Hard
+COMPANY:-Google
+
+Question:-
+You are given a history of credit card transaction data for the people of India across cities . Write an SQL to find how many days 
+each city took to reach cumulative spend of 1500 from its first day of transactions. 
+
+Display city, first transaction date , date of 1500 spend and # of days in the ascending order of city.
+
+Table: credit_card_transactions
++------------------+-------------+
+| COLUMN_NAME      | DATA_TYPE   |
++------------------+-------------+
+| transaction_id   | int         |
+| transaction_date | date        |
+| amount           | int         |
+| card_type        | varchar(12) |
+| city             | varchar(20) |
+| gender           | varchar(1)  |
++------------------+-------------+
+
+My Solution:-
+WITH overallData AS (
+  SELECT 
+    city, 
+    transaction_date, 
+    SUM(amount) AS totalAmt,
+    MIN(transaction_date) OVER(PARTITION BY city) AS firstTrnsaction
+  FROM credit_card_transactions
+  GROUP BY city, transaction_date
+),
+rollingSum AS (
+  SELECT *,
+         SUM(totalAmt) OVER(PARTITION BY city ORDER BY transaction_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cummSum
+  FROM overallData
+)
+SELECT city, firstTrnsaction, MIN(transaction_date) AS newDate,
+MIN(transaction_date)- firstTrnsaction AS noOfDays
+FROM rollingSum
+WHERE cummSum>=1500
+GROUP BY city, firstTrnsaction
+ORDER BY city
