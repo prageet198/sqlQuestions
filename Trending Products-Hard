@@ -1,0 +1,45 @@
+DIFFICULTY:-Hard
+COMPANY:-Amazon
+
+Question:-
+Amazon wants to find out the trending products for each month. Trending products are those for which any given month sales are more 
+than the sum of previous 2 months sales for that product.
+
+Please note that for first 2 months of operations this metrics does not make sense. So output should start from 3rd month only.  
+Assume that each product has at least 1 sale each month, display order month and product id. Sort by order month.
+
+Table: orders 
++-------------+------------+
+| COLUMN_NAME | DATA_TYPE  |
++-------------+------------+
+| order_month | varchar(6) |
+| product_id  | varchar(5) |
+| sales       | int        |
++-------------+------------+
+
+My Solution:-
+WITH productData AS(
+SELECT order_month, product_id, sales,SUBSTRING(order_month, 5, 2) AS month
+FROM orders
+),
+combineData AS(
+SELECT order_month,product_id, sales, month,
+SUM(sales) OVER(PARTITION BY product_id ORDER BY month ROWS BETWEEN 2 PRECEDING AND 1 PRECEDING) AS previous2MonthSales,
+ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY month) AS rn
+FROM productData
+)
+
+SELECT order_month, product_id FROM combineData
+WHERE rn>=3 AND sales> previous2MonthSales
+ORDER BY order_month, product_id ASC;
+
+Acutual Solution:-
+with cte as (
+select * 
+,sum(sales) over(partition by product_id order by order_month rows between 2 preceding and 1 preceding) as last2
+,row_number() over(partition by product_id order by order_month) as rn
+from orders 
+)
+select order_month,product_id from cte 
+where rn>=3 and sales > last2
+ORDER BY order_month,product_id ASC;
