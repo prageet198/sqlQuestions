@@ -1,0 +1,53 @@
+DIFFICULTY:-Medium
+COMPANY:-Amazon
+
+Question:-
+Given a sales dataset that records daily transactions for various products, write an SQL query to calculate last quarter's total sales and quarter-to-date (QTD) sales 
+for each product, helping analyze past performance and current trends.
+
+ 
+
+Table: sales
++-------------+----------+
+| COLUMN_NAME | DATA_TYPE|
++-------------+----------+
+| id          | int      |
+| product_id  | int      | 
+| sale_date   | date     | 
+| sale_amount | int      | 
++-------------+----------+
+
+My Solution:-
+-- Calculate quarter-to-date start date
+with qtd_start AS (
+  SELECT 
+    DATE_FORMAT(
+        DATE_SUB(CURDATE(), INTERVAL (MOD(MONTH(CURDATE())-1, 3)) MONTH),
+        '%Y-%m-01'
+    ) AS current_qtr_start
+),
+DateRanges as (
+select current_qtr_start,current_qtr_start - INTERVAL 1 QUARTER as last_qtr_start
+,current_qtr_start - INTERVAL 1 DAY as last_qtr_end
+from qtd_start
+),
+SalesData AS (
+    SELECT 
+        product_id,
+        SUM(CASE 
+            WHEN sale_date >= (SELECT last_qtr_start FROM DateRanges) 
+                 AND sale_date <= (SELECT last_qtr_end FROM DateRanges) 
+            THEN sales_amount 
+            ELSE 0 
+        END) AS last_quarter_sales,
+        SUM(CASE 
+            WHEN sale_date >= (SELECT current_qtr_start FROM DateRanges) 
+                 AND sale_date <= CURRENT_DATE 
+            THEN sales_amount 
+            ELSE 0 
+        END) AS qtd_sales
+    FROM sales
+    GROUP BY product_id
+)
+SELECT product_id, last_quarter_sales, qtd_sales
+FROM SalesData;
