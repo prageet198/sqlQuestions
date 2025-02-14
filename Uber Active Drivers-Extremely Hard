@@ -1,0 +1,58 @@
+DIFFICULTY:-Extremely Hard
+COMPANY:-Uber
+
+Question:-
+We have a driver table which has driver id and join date for each Uber drivers. We have another table rides where we have ride id, ride date and driver id.  
+A driver becomes inactive if he doesn't have any ride for consecutive 28 days after joining the company. Driver can become active again once he takes a new ride. 
+We need to find number of active drivers for uber at the end of each month for year 2023.
+
+For example if a driver joins Uber on Jan 15th and takes his first ride on March 15th. He will be considered active for Jan month end , 
+Not active for Feb month end but active for March month end.
+
+Table: drivers 
++---------------+----------+
+| COLUMN_NAME   | DATA_TYPE|
++---------------+----------+
+| driver_id     | int      |
+| join_date     | date     |
++-------------+------------+
+Table: rides 
++---------------+----------+
+| COLUMN_NAME   | DATA_TYPE|
++---------------+----------+
+| ride_id       | int      |
+| ride_date     | date     |
+| driver_id     | date     |
++-------------+------------+
+Table: calendar_dim (Contains all dates of 2023) 
++---------------+----------+
+| COLUMN_NAME   | DATA_TYPE|
++---------------+----------+
+| cal_date      | date     |
++-------------+------------+ 
+
+My Solution:-
+WITH cal AS (
+    SELECT MONTH(cal_date) AS cal_month, MAX(cal_date) AS month_end_date
+    FROM calendar_dim
+    GROUP BY MONTH(cal_date)
+),
+join_ride AS (
+    SELECT driver_id, join_date AS join_ride_date 
+    FROM drivers
+    UNION 
+    SELECT driver_id, ride_date 
+    FROM rides
+),
+days_since_last_ride_monthend AS (
+    SELECT cal.month_end_date, jr.driver_id, MAX(jr.join_ride_date) AS latest_ride,
+           DATEDIFF(cal.month_end_date, MAX(jr.join_ride_date)) AS days_since_last_ride
+    FROM cal
+    LEFT JOIN join_ride jr ON cal.month_end_date >= jr.join_ride_date
+    GROUP BY cal.month_end_date, jr.driver_id
+)
+SELECT month_end_date, 
+       SUM(CASE WHEN days_since_last_ride <= 28 THEN 1 ELSE 0 END) AS no_of_active_drivers
+FROM days_since_last_ride_monthend
+GROUP BY month_end_date
+ORDER BY month_end_date;
