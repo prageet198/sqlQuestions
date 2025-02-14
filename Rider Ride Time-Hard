@@ -1,0 +1,70 @@
+DIFFICULTY:-Hard
+COMAPNY:-Swiggy
+
+Question:-
+You are working with Zomato, a food delivery platform, and you need to analyze the performance of Zomato riders in terms of the time they 
+spend delivering orders each day. Given the pickup and delivery times for each order, your task is to calculate the duration of time spent by 
+each rider on deliveries each day.  Order the output by rider id and ride date.
+
+Table:orders 
++---------------+-----------+
+| COLUMN_NAME   | DATA_TYPE |
++---------------+-----------+
+| rider_id      | int       |
+| order_id      | int       |
+| pickup_time   | datetime  |
+| delivery_time | datetime  |
++---------------+-----------+
+
+My Solution:-
+WITH initialData AS(
+SELECT rider_id, DATE(pickup_time) AS rideDate,
+TIMESTAMPDIFF(MINUTE, pickup_time, delivery_time) AS rideTime
+FROM orders
+WHERE DATE(pickup_time)=DATE(delivery_time)
+UNION ALL
+SELECT rider_id, DATE(pickup_time) AS rideDate,
+TIMESTAMPDIFF(MINUTE, pickup_time, DATE(delivery_time)) AS rideTime
+FROM orders
+WHERE DATE(pickup_time)!=DATE(delivery_time)
+UNION ALL
+SELECT rider_id, DATE(delivery_time) AS rideDate,
+TIMESTAMPDIFF(MINUTE, DATE(delivery_time), delivery_time) AS rideTime
+FROM orders
+WHERE DATE(pickup_time)!=DATE(delivery_time)
+)
+
+SELECT rider_id, rideDate, SUM(rideTime) AS totalRideTime
+FROM initialData
+WHERE rideTime!=0
+GROUP BY rider_id, rideDate
+ORDER BY rider_id, rideDate
+
+
+Actual Solution:-
+with cte as 
+(
+select order_id,rider_id,CAST(pickup_time AS DATE) as ride_date
+,TIMESTAMPDIFF(MINUTE, pickup_time,delivery_time) as ride_time
+ from orders
+ where CAST(pickup_time AS DATE)=CAST(delivery_time AS DATE)
+
+union all
+
+select order_id,rider_id, CAST(pickup_time AS DATE) as ride_date
+,TIMESTAMPDIFF(MINUTE, pickup_time,CAST(delivery_time as DATE)) as ride_time
+ from orders
+where CAST(pickup_time AS DATE)!=CAST(delivery_time AS DATE)
+
+union all
+
+select order_id,rider_id, CAST(delivery_time AS DATE) as ride_date
+,TIMESTAMPDIFF(MINUTE,CAST(delivery_time as DATE), delivery_time) as ride_time
+ from orders
+where CAST(pickup_time AS DATE)!=CAST(delivery_time AS DATE)
+)
+select rider_id,ride_date,sum(ride_time) as ride_time_mins
+ from cte
+where ride_time!=0
+group by rider_id,ride_date
+order by rider_id,ride_date;
