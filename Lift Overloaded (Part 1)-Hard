@@ -1,0 +1,52 @@
+DIFFICULTY:-Hard
+COMPANY:-Meta
+
+Question:-
+You are given a table of list of lifts , their maximum capacity and people along with their weight who wants to enter into it. 
+You need to make sure maximum people enter into the lift without lift getting overloaded.
+
+For each lift find the comma separated list of people who can be accommodated. The comma separated list should have people in the order of 
+their weight in increasing order, display the output in increasing order of id.
+
+Table: lifts
++-------------+-----------+
+| COLUMN_NAME | DATA_TYPE |
++-------------+-----------+
+| capacity_kg | int       |
+| id          | int       |
++-------------+-----------+
+Table: lift_passengers
++----------------+-------------+
+| COLUMN_NAME    | DATA_TYPE   |
++----------------+-------------+
+| passenger_name | varchar(10) |
+| weight_kg      | int         |
+| lift_id        | int         |
++----------------+-------------+
+
+My Solution:-
+WITH overallData AS(
+select lift_id,
+passenger_name,
+weight_kg,
+capacity_kg,
+SUM(weight_kg) OVER (PARTITION BY lift_id ORDER BY weight_kg) AS runningWt
+from lift_passengers INNER JOIN lifts ON lift_passengers.lift_id=lifts.id
+)
+SELECT lift_id, GROUP_CONCAT(passenger_name) AS passengerList
+FROM overallData
+WHERE runningWt<=capacity_kg
+GROUP BY lift_id
+
+Actual Solution:-
+with running_weight as (
+select l.id , lp.passenger_name ,lp.weight_kg,l.capacity_kg 
+, sum(lp.weight_kg) over(partition by l.id order by lp.weight_kg rows between unbounded preceding and current row) as running_sum
+from lifts l
+inner join lift_passengers lp on l.id=lp.lift_id
+)
+select id, GROUP_CONCAT(DISTINCT passenger_name ORDER BY weight_kg  SEPARATOR',') as passenger_list
+from running_weight
+where running_sum < capacity_kg
+group by id
+ORDER BY id;
