@@ -1,0 +1,30 @@
+DIFFICULTY:-Hard
+COMPANY:-Uber
+
+Question:-
+A profit ride for a Uber driver is considered when the start location and start time of a ride exactly match with the previous ride's end location and end time. 
+Write an SQL to calculate total number of rides and total profit rides by each driver, display the output in ascending order of id.
+
+Table: drivers
++-------------+-------------+
+| COLUMN_NAME | DATA_TYPE   |
++-------------+-------------+
+| id          | varchar(10) |
+| start_loc   | varchar(1)  |
+| start_time  | time        |
+| end_loc     | varchar(1)  |
+| end_time    | time        |
++-------------+-------------+
+
+My Solution:-
+WITH allData AS(
+SELECT *,
+LAG(end_time,1,0) OVER(PARTITION BY id ORDER BY start_time) AS previousEndTime,
+LAG(end_loc,1,0) OVER(PARTITION BY id ORDER BY start_time) AS previousLocation
+FROM drivers
+)
+
+SELECT id,COUNT(*) AS totalRides,
+SUM(CASE WHEN start_time=previousEndTime AND start_loc=previousLocation THEN 1 ELSE 0 END) AS profitRides
+FROM allData
+GROUP BY id
