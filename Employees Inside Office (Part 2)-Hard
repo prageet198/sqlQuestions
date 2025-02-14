@@ -1,0 +1,38 @@
+DIFFICULTY:-Hard
+COMPANY:-Gameberry Labs
+
+Question:-
+A company record its employee's movement In and Out of office in a table. Please note below points about the data:
+
+1- First entry for each employee is “in”
+2- Every “in” is succeeded by an “out”
+3- Employee can work across days
+Write an SQL to measure the time spent by each employee inside the office between “2019-04-01 14:00:00” and “2019-04-02 10:00:00" in minutes, 
+display the output in ascending order of employee id .
+
+Table: employee_record
++-------------+------------+
+| COLUMN_NAME | DATA_TYPE  |
++-------------+------------+
+| emp_id      | int        |
+| action      | varchar(3) |
+| created_at  | datetime   |
++-------------+------------+
+
+My Solution:-
+WITH initialData AS(
+SELECT *,
+LEAD(created_at) OVER(PARTITION BY emp_id ORDER BY created_at) AS nextCreatedAt
+FROM employee_record
+),
+calculation AS (
+SELECT emp_id,
+CASE WHEN created_at <'2019-04-01 14:00:00' THEN '2019-04-01 14:00:00' ELSE created_at END AS inTime,
+CASE WHEN nextCreatedAt>'2019-04-02 10:00:00' THEN '2019-04-02 10:00:00' ELSE nextCreatedAt END AS outTime
+FROM initialData
+WHERE action='in'
+)
+SELECT emp_id,
+ROUND(SUM(CASE WHEN inTime>=outTime THEN 0 ELSE TIMESTAMPDIFF(minute,Intime,outTime)END),1) AS timeSpend
+FROM calculation
+GROUP BY emp_id
